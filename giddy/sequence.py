@@ -11,6 +11,179 @@ import numpy as np
 import scipy.spatial.distance as d
 from .markov import Markov
 
+class Sequence_base(object):
+    def __init__(self, y, subs_mat=None,
+                 indel=None):
+
+        y = np.asarray(y)
+        merged = list(itertools.chain.from_iterable(y))
+        self.classes = np.unique(merged)
+        self.k = len(self.classes)
+        self.n = len(y)
+        self.indel = indel
+        self.subs_mat = subs_mat
+        # self.cluster_type = cluster_type
+        self.label_dict = dict(zip(self.classes, range(self.k)))
+
+        y_int = []
+        for yi in y:
+            y_int.append(list(map(self.label_dict.get, yi)))
+        self.y_int = np.array(y_int)
+
+        def _om_pair_dist(self, seq1, seq2):
+            '''
+            Method for calculating the optimal matching distance between a pair of
+            sequences given a substitution cost matrix and an indel cost.
+
+            Arguments
+            ---------
+            seq1            : array
+                              (t1, ), the first sequence
+            seq2            : array
+                              (t2, ), the second sequence
+
+            Returns
+            -------
+            D               : array
+                              (t2+1, t1+1), score matrix: D[i+1,j+1] is the best
+                              score for aligning the substring, seq1[0:j] and seq2[0:i],
+                              and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
+
+            '''
+
+            t1 = len(seq1)
+            t2 = len(seq2)
+
+            D = np.zeros((t2 + 1, t1 + 1))
+            for j in range(1, t1 + 1):
+                D[0, j] = self.indel * j
+            for i in range(1, t2 + 1):
+                D[i, 0] = self.indel * i
+
+            for i in range(1, t2 + 1):
+                for j in range(1, t1 + 1):
+                    gaps = D[i, j - 1] + self.indel
+                    gapt = D[i - 1, j] + self.indel
+                    match = D[i - 1, j - 1] + self.subs_mat[
+                        seq1[j - 1], seq2[i - 1]]
+                    D[i, j] = min(match, gaps, gapt)
+            return D
+
+        def _om_dist(self, y_int):
+            '''
+            Method for calculating optimal matching distances between all
+            sequence pairs.
+
+            Arguments
+            ---------
+            y_int           : array
+                              Encoded longitudinal data ready for optimal matching.
+
+            Note
+            ----
+            This method is optimized to calculate the distance between unique
+            sequences only in order to save computation time.
+
+            '''
+
+            y_str = []
+            for i in y_int:
+                y_str.append(''.join(list(map(str, i))))
+
+            moves_str, counts = np.unique(y_str, axis=0, return_counts=True)
+            uni_num = len(moves_str)
+            dict_move_index = dict(zip(list(moves_str), range(uni_num)))
+
+            # moves, counts = np.unique(y_int, axis=0, return_counts=True)
+            y_int_uni = []
+            for i in moves_str:
+                y_int_uni.append(list(map(int, i)))
+            uni_seq_dis_mat = np.zeros((uni_num, uni_num))
+            for pair in itertools.combinations(range(uni_num), 2):
+                seq1 = y_int_uni[pair[0]]
+                seq2 = y_int_uni[pair[1]]
+                uni_seq_dis_mat[pair[0], pair[1]] = self._om_pair_dist(seq1,
+                                                                       seq2)[
+                    -1, -1]
+            uni_seq_dis_mat = uni_seq_dis_mat + uni_seq_dis_mat.transpose()
+
+            seq_dis_mat = np.zeros((self.n, self.n))
+            for pair in itertools.combinations(range(self.n), 2):
+                seq1 = y_str[pair[0]]
+                seq2 = y_str[pair[1]]
+                seq_dis_mat[pair[0], pair[1]] = uni_seq_dis_mat[
+                    dict_move_index[seq1],
+                    dict_move_index[
+                        seq2]]
+
+            self.seq_dis_mat = seq_dis_mat + seq_dis_mat.transpose()
+
+class Sequence_OMtransition(Sequence_base):
+    def __init__(self, y, subs_mat=None, trans_mat=None, w=0, trans_type=None,
+                 subs_type=None, indel=None):
+        Sequence_base.__init__(y, subs_mat=subs_mat, indel=indel)
+        self.w = w
+        self.trans_mat = trans_mat
+        self.trans_type = trans_type
+        self.subs_type = subs_type
+
+        # self.indel = 2
+        y_uni = np.unique(self.y_int)
+        dict_trans_state = {}
+        trans_list = []
+        for i, tran in enumerate(itertools.product(y_uni, y_uni)):
+            trans_list.append(tran)
+            dict_trans_state[tran] = i
+
+
+        if trans_mat is None:
+            if trans_type is None:
+                raise ValueError("Please specify a proper `trans_mat` or "
+                                 "`trans_type` to proceed!")
+            else:
+                if trans_type.lower() == "stable":
+                    k_tran = np.ones((k, k))
+                    np.fill_diagonal(k_tran, 0)
+                elif trans_type.lower() == "markov":
+                    p = Markov(y_int).p
+                    # k_tran = (2 - (p + p.T)) / 2
+                    k_tran = 1-p
+                self.trans_mat = k_tran
+
+        if subs_mat is None or indel is None:
+            if subs_type is None:
+                raise ValueError("Please specify a proper `subs_type` or "
+                                 "`subs_mat` and `indel` to "
+                                 "proceed!")
+            else:
+                if subs_type.lower()=="constant":
+                    k_subs = np.ones((k, k))
+                    np.fill_diagonal(k_subs, 0)
+                    self.subs_mat = k_subs
+                    self.indel = 5
+
+
+        self.subs_mat = np.zeros((k ** 2, k ** 2))
+        for row in range(k ** 2):
+            row_tran = trans_list[row]
+            for col in range(k ** 2):
+                col_tran = trans_list[col]
+                subs_mat[row, col] = w * k_subs[row_tran[0], col_tran[0]] + (
+                            1 - w) * (abs(
+                    k_tran[row_tran[0], row_tran[1]] - k_tran[
+                        col_tran[0], col_tran[1]]))
+
+        # Transform sequences of states into sequences of transitions.
+        y_tran_index = np.zeros((y_int.shape[0], y_int.shape[1] - 1))
+        y_tran = []
+        for i in range(y_int.shape[1] - 1):
+            y_tran.append(list(zip(y_int[:, i], y_int[:, i + 1])))
+        for i in range(y_int.shape[0]):
+            for j in range(y_int.shape[1] - 1):
+                y_tran_index[i, j] = dict_trans_state[y_tran[j][i]]
+
+        self._om_dist(y_tran_index)
+
 class Sequence(object):
     """
     Pairwise sequence analysis.
@@ -249,6 +422,8 @@ class Sequence(object):
                         for j in range(y_int.shape[1]):
                             y_tran_index[i, j] = dict_trans_state[y_tran[j][i]]
                     self._om_dist(y_tran_index)
+
+
 
         else:
             self._om_dist(y_int)
