@@ -410,12 +410,14 @@ class Sequence(object):
                         for col in range(self.k ** 2):
                             col_Index = col + self.k
                             col_tran = trans_list[col_Index]
-                            if row_tran[0] == row_tran[1]:
-                                if col_tran[0] == col_tran[1]:
-                                    subs_mat[row_index, col_Index] = 0
-                            elif row_tran[0] != row_tran[1]:
-                                if col_tran[0] != col_tran[1]:
-                                    subs_mat[row_index, col_Index] = 0
+                            subs_mat[row_index, col_index] = abs(int(row_tran[0] == row_tran[1]) -
+                                                                 int(col_tran[0] == col_tran[1]))
+                            # if row_tran[0] == row_tran[1]:
+                            #     if col_tran[0] == col_tran[1]:
+                            #         subs_mat[row_index, col_Index] = 0
+                            # elif row_tran[0] != row_tran[1]:
+                            #     if col_tran[0] != col_tran[1]:
+                            #         subs_mat[row_index, col_Index] = 0
                     self.dict_trans_state = dict_trans_state
                     self.subs_mat = subs_mat
 
