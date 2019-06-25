@@ -87,21 +87,22 @@ class Sequence_base(object):
 
         '''
 
-        # y_str = []
-        # for i in y_int:
-        #     y_str.append(''.join(list(map(str, i))))
+        y_str = []
+        for i in y_int:
+            y_str.append(''.join(list(map(str, i))))
 
-        moves_int, counts = np.unique(y_int, axis=0, return_counts=True)
-        uni_num = len(moves_int)
-        dict_move_index = dict(zip(map(tuple,moves_int), range(uni_num)))
+        moves_str, unique_indices = np.unique(y_str, axis=0, return_index=True)
+        moves_int = y_int[unique_indices]
+        uni_num = len(moves_str)
+        dict_move_index = dict(zip(map(tuple, moves_int), range(uni_num)))
 
-        y_int_uni = moves_int
-        # for i in moves_int:
-        #     y_int_uni.append(list(map(int, i)))
+        # dict_move_index = dict(zip(map(tuple, moves_str), range(uni_num)))
+
+        # y_uni = moves_int
         uni_seq_dis_mat = np.zeros((uni_num, uni_num))
         for pair in itertools.combinations(range(uni_num), 2):
-            seq1 = y_int_uni[pair[0]]
-            seq2 = y_int_uni[pair[1]]
+            seq1 = moves_int[pair[0]]
+            seq2 = moves_int[pair[1]]
             uni_seq_dis_mat[pair[0], pair[1]] = self._om_pair_dist(seq1,
                                                                    seq2)[-1, -1]
         uni_seq_dis_mat = uni_seq_dis_mat + uni_seq_dis_mat.transpose()
@@ -488,16 +489,22 @@ class Sequence(object):
         sequences only in order to save computation time.
 
         '''
-        moves_int, counts = np.unique(y_int, axis=0, return_counts=True)
-        uni_num = len(moves_int)
-        dict_move_index = dict(zip(map(tuple,moves_int), range(uni_num)))
+        y_str = []
+        for i in y_int:
+            y_str.append(''.join(list(map(str, i))))
 
-        y_int_uni = moves_int
+        moves_str, unique_indices = np.unique(y_str, axis=0, return_index=True)
+        moves_int = y_int[unique_indices]
+        uni_num = len(moves_str)
+        dict_move_index = dict(zip(map(tuple, moves_int), range(uni_num)))
 
+        # dict_move_index = dict(zip(map(tuple, moves_str), range(uni_num)))
+
+        # y_uni = moves_int
         uni_seq_dis_mat = np.zeros((uni_num, uni_num))
         for pair in itertools.combinations(range(uni_num), 2):
-            seq1 = y_int_uni[pair[0]]
-            seq2 = y_int_uni[pair[1]]
+            seq1 = moves_int[pair[0]]
+            seq2 = moves_int[pair[1]]
             uni_seq_dis_mat[pair[0], pair[1]] = self._om_pair_dist(seq1,
                                                                    seq2)[-1, -1]
         uni_seq_dis_mat = uni_seq_dis_mat + uni_seq_dis_mat.transpose()
