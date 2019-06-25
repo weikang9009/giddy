@@ -11,6 +11,101 @@ import numpy as np
 import scipy.spatial.distance as d
 from .markov import Markov
 
+
+# def om_pair_dist(seq1, seq2, subs_mat, indel):
+#     '''
+#     Method for calculating the optimal matching distance between a pair of
+#     sequences given a substitution cost matrix and the indel cost.
+#
+#     Arguments
+#     ---------
+#     seq1            : array
+#                       (t1, ), the first sequence
+#     seq2            : array
+#                       (t2, ), the second sequence
+#     subs_mat        : array
+#                       (k, k), the matrix of substitution costs
+#     indel           : float or array
+#                       float: state-independent cost, array: state-dependent cost
+#
+#     Returns
+#     -------
+#     D               : array
+#                       (t2+1, t1+1), score matrix: D[i+1,j+1] is the best
+#                       score for aligning the substring, seq1[0:j] and seq2[0:i],
+#                       and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
+#
+#     '''
+#
+#     t1 = len(seq1)
+#     t2 = len(seq2)
+#
+#     D = np.zeros((t2 + 1, t1 + 1))
+#     for j in range(1, t1 + 1):
+#         D[0, j] = indel * j
+#     for i in range(1, t2 + 1):
+#         D[i, 0] = indel * i
+#
+#     for i in range(1, t2 + 1):
+#         for j in range(1, t1 + 1):
+#             gaps = D[i, j - 1] + indel
+#             gapt = D[i - 1, j] + indel
+#             match = D[i - 1, j - 1] + subs_mat[seq1[j - 1], seq2[i - 1]]
+#             D[i, j] = min(match, gaps, gapt)
+#     return D
+
+def om_pair_dist(seq1, seq2, subs_mat, indel):
+    '''
+    Method for calculating the optimal matching distance between a pair of
+    sequences given a substitution cost matrix and the indel cost.
+
+    Arguments
+    ---------
+    seq1            : array
+                      (t1, ), the first sequence. The input sequence should be
+                      integars and start from 0.
+    seq2            : array
+                      (t2, ), the second sequence. The input sequence should be
+                      integars and start from 0.
+    subs_mat        : array
+                      (k, k), the matrix of substitution costs
+    indel           : float or array
+                      float: state-independent cost, array: state-dependent cost
+
+    Returns
+    -------
+    D               : array
+                      (t2+1, t1+1), score matrix: D[i+1,j+1] is the best
+                      score for aligning the substring, seq1[0:j] and seq2[0:i],
+                      and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
+
+    '''
+
+    seq1 = np.asarray(seq1).astype(int)
+    seq2 = np.asarray(seq2).astype(int)
+    t1 = len(seq1)
+    t2 = len(seq2)
+    k = len(subs_mat)
+    if np.isscalar(indel):
+        indel = np.ones(k) * indel
+    else:
+        indel = np.asarray(indel)
+
+    seq1_indel = indel[seq1]
+    seq2_indel = indel[seq2]
+
+    D = np.zeros((t2 + 1, t1 + 1))
+    D[0, 1:] = np.cumsum(seq1_indel)
+    D[1:, 0] = np.cumsum(seq2_indel)
+
+    for i in range(1, t2 + 1):
+        for j in range(1, t1 + 1):
+            gaps = D[i, j - 1] + seq2_indel[j - 1]
+            gapt = D[i - 1, j] + seq1_indel[i - 1]
+            match = D[i - 1, j - 1] + subs_mat[seq1[j - 1], seq2[i - 1]]
+            D[i, j] = min(match, gaps, gapt)
+    return D
+
 class Sequence_base(object):
     def __init__(self, y, subs_mat=None,
                  indel=None):
@@ -20,10 +115,10 @@ class Sequence_base(object):
         self.classes = np.unique(merged)
         self.k = len(self.classes)
         self.n = len(y)
-        self.indel = indel
-        self.subs_mat = subs_mat
         # self.cluster_type = cluster_type
         self.label_dict = dict(zip(self.classes, range(self.k)))
+        self.subs_mat = subs_mat
+        self.indel = indel
 
         y_int = []
         for yi in y:
@@ -31,44 +126,63 @@ class Sequence_base(object):
         self.y_int = np.array(y_int)
         self.t = self.y_int.shape[1]
 
+
+        # might want to move this to child class when refactoring
+        if self.subs_mat is not None:
+            self.subs_mat = np.asarray(self.subs_mat)
+            # if len(subs_mat) != self.k:
+            #     raise ValueError('Please specify a proper substitu')
+            if len(indel) == 1:
+                self.indel = np.ones(len(self.subs_mat)) * indel
+            elif len(indel) == len(self.subs_mat):
+                self.indel = np.asarray(self.indel)
+            else:
+                raise ValueError('Please specify a proper substitution matrix '
+                                 'and a proper insertion/deletion cost ('
+                                 'vector)!')
+
     def _om_pair_dist(self, seq1, seq2):
-        '''
-        Method for calculating the optimal matching distance between a pair of
-        sequences given a substitution cost matrix and an indel cost.
+        return om_pair_dist(seq1, seq2, self.subs_mat, self.indel)
 
-        Arguments
-        ---------
-        seq1            : array
-                          (t1, ), the first sequence
-        seq2            : array
-                          (t2, ), the second sequence
 
-        Returns
-        -------
-        D               : array
-                          (t2+1, t1+1), score matrix: D[i+1,j+1] is the best
-                          score for aligning the substring, seq1[0:j] and seq2[0:i],
-                          and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
-
-        '''
-
-        t1 = len(seq1)
-        t2 = len(seq2)
-
-        D = np.zeros((t2 + 1, t1 + 1))
-        for j in range(1, t1 + 1):
-            D[0, j] = self.indel * j
-        for i in range(1, t2 + 1):
-            D[i, 0] = self.indel * i
-
-        for i in range(1, t2 + 1):
-            for j in range(1, t1 + 1):
-                gaps = D[i, j - 1] + self.indel
-                gapt = D[i - 1, j] + self.indel
-                match = D[i - 1, j - 1] + self.subs_mat[
-                    seq1[j - 1], seq2[i - 1]]
-                D[i, j] = min(match, gaps, gapt)
-        return D
+    # def _om_pair_dist(self, seq1, seq2):
+    #     '''
+    #     Method for calculating the optimal matching distance between a pair of
+    #     sequences given a substitution cost matrix and an indel cost.
+    #
+    #     Arguments
+    #     ---------
+    #     seq1            : array
+    #                       (t1, ), the first sequence
+    #     seq2            : array
+    #                       (t2, ), the second sequence
+    #
+    #     Returns
+    #     -------
+    #     D               : array
+    #                       (t2+1, t1+1), score matrix: D[i+1,j+1] is the best
+    #                       score for aligning the substring, seq1[0:j] and seq2[0:i],
+    #                       and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
+    #
+    #     '''
+    #
+    #     t1 = len(seq1)
+    #     t2 = len(seq2)
+    #
+    #     D = np.zeros((t2 + 1, t1 + 1))
+    #     for j in range(1, t1 + 1):
+    #         D[0, j] = self.indel * j
+    #     for i in range(1, t2 + 1):
+    #         D[i, 0] = self.indel * i
+    #
+    #     for i in range(1, t2 + 1):
+    #         for j in range(1, t1 + 1):
+    #             gaps = D[i, j - 1] + self.indel
+    #             gapt = D[i - 1, j] + self.indel
+    #             match = D[i - 1, j - 1] + self.subs_mat[
+    #                 seq1[j - 1], seq2[i - 1]]
+    #             D[i, j] = min(match, gaps, gapt)
+    #     return D
 
     def _om_dist(self, y_int):
         '''
@@ -118,6 +232,7 @@ class Sequence_base(object):
         self.seq_dis_mat = seq_dis_mat + seq_dis_mat.transpose()
 
 class Sequence_OMtransition(Sequence_base):
+
     def __init__(self, y, subs_state_mat=None, trans_mat=None, w=0,
                  trans_type=None,
                  subs_state_type=None, indel_state=None):
@@ -408,8 +523,8 @@ class Sequence(object):
                         row_index = row + self.k
                         row_tran = trans_list[row_index]
                         for col in range(self.k ** 2):
-                            col_Index = col + self.k
-                            col_tran = trans_list[col_Index]
+                            col_index = col + self.k
+                            col_tran = trans_list[col_index]
                             subs_mat[row_index, col_index] = abs(int(row_tran[0] == row_tran[1]) -
                                                                  int(col_tran[0] == col_tran[1]))
                             # if row_tran[0] == row_tran[1]:
