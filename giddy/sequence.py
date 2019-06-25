@@ -261,7 +261,7 @@ class Sequence_OMtransition(Sequence_base):
                     k_tran = np.ones((self.k, self.k))
                     np.fill_diagonal(k_tran, 0)
                 elif trans_type.lower() == "markov":
-                    p = Markov(y_int).p
+                    p = Markov(self.y_int).p
                     # k_tran = (2 - (p + p.T)) / 2
                     k_tran = 1-p
                 self.trans_mat = k_tran
