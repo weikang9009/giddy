@@ -100,8 +100,8 @@ def om_pair_dist(seq1, seq2, subs_mat, indel):
 
     for i in range(1, t2 + 1):
         for j in range(1, t1 + 1):
-            gaps = D[i, j - 1] + seq2_indel[j - 1]
-            gapt = D[i - 1, j] + seq1_indel[i - 1]
+            gaps = D[i, j - 1] + seq1_indel[j - 1]
+            gapt = D[i - 1, j] + seq2_indel[i - 1]
             match = D[i - 1, j - 1] + subs_mat[seq1[j - 1], seq2[i - 1]]
             D[i, j] = min(match, gaps, gapt)
     return D
@@ -571,24 +571,24 @@ class Sequence(object):
                           and D[t2+1, t1+1] (or D[-1,-1]) is the global optimal score.
 
         '''
-
-        t1 = len(seq1)
-        t2 = len(seq2)
-
-        D = np.zeros((t2 + 1, t1 + 1))
-        for j in range(1, t1 + 1):
-            D[0, j] = self.indel * j
-        for i in range(1, t2 + 1):
-            D[i, 0] = self.indel * i
-
-        for i in range(1, t2 + 1):
-            for j in range(1, t1 + 1):
-                gaps = D[i, j - 1] + self.indel
-                gapt = D[i - 1, j] + self.indel
-                match = D[i - 1, j - 1] + self.subs_mat[
-                    seq1[j - 1], seq2[i - 1]]
-                D[i, j] = min(match, gaps, gapt)
-        return D
+        return om_pair_dist(seq1, seq2, self.subs_mat, self.indel)
+        # t1 = len(seq1)
+        # t2 = len(seq2)
+        #
+        # D = np.zeros((t2 + 1, t1 + 1))
+        # for j in range(1, t1 + 1):
+        #     D[0, j] = self.indel * j
+        # for i in range(1, t2 + 1):
+        #     D[i, 0] = self.indel * i
+        #
+        # for i in range(1, t2 + 1):
+        #     for j in range(1, t1 + 1):
+        #         gaps = D[i, j - 1] + self.indel
+        #         gapt = D[i - 1, j] + self.indel
+        #         match = D[i - 1, j - 1] + self.subs_mat[
+        #             seq1[j - 1], seq2[i - 1]]
+        #         D[i, j] = min(match, gaps, gapt)
+        # return D
 
     def _om_dist(self, y_int):
         '''
