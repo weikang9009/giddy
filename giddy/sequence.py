@@ -141,8 +141,8 @@ class Sequence_base(object):
                                  'and a proper insertion/deletion cost ('
                                  'vector)!')
 
-    def _om_pair_dist(self, seq1, seq2):
-        return om_pair_dist(seq1, seq2, self.subs_mat, self.indel)
+    # def _om_pair_dist(self, seq1, seq2):
+    #     return om_pair_dist(seq1, seq2, self.subs_mat, self.indel)
 
 
     # def _om_pair_dist(self, seq1, seq2):
@@ -217,8 +217,12 @@ class Sequence_base(object):
         for pair in itertools.combinations(range(uni_num), 2):
             seq1 = moves_int[pair[0]]
             seq2 = moves_int[pair[1]]
-            uni_seq_dis_mat[pair[0], pair[1]] = self._om_pair_dist(seq1,
-                                                                   seq2)[-1, -1]
+            uni_seq_dis_mat[pair[0], pair[1]] = om_pair_dist(seq1, seq2,
+                                                             self.subs_mat,
+                                                             self.indel)[-1,
+                                                                         -1]
+            # uni_seq_dis_mat[pair[0], pair[1]] = self._om_pair_dist(seq1,
+            #                                                        seq2)[-1, -1]
         uni_seq_dis_mat = uni_seq_dis_mat + uni_seq_dis_mat.transpose()
 
         seq_dis_mat = np.zeros((self.n, self.n))
@@ -241,7 +245,8 @@ class Sequence_OMtransition(Sequence_base):
         self.trans_mat = trans_mat
         self.trans_type = trans_type
         self.subs_state_type = subs_state_type
-
+        self.indel_state = indel_state
+        self.subs_state_mat = subs_state_mat
 
         # self.indel = 2
         y_uni = np.unique(self.y_int)
@@ -276,13 +281,16 @@ class Sequence_OMtransition(Sequence_base):
                     k_subs = np.ones((self.k, self.k))
                     np.fill_diagonal(k_subs, 0)
                     self.subs_state_mat = k_subs
-                    self.indel_state = 5
+                    self.indel_state = 5 * np.ones(self.k)
 
-
-        self.subs_mat = np.zeros((self.k ** 2, self.k ** 2))
-        for row in range(self.k ** 2):
+        k_trans = self.k ** 2
+        self.subs_mat = np.zeros((k_trans, k_trans))
+        self.indel = np.zeros(k_trans)
+        for row in range(k_trans):
             row_tran = trans_list[row]
-            for col in range(self.k ** 2):
+            self.indel[row] = w * self.indel_state[row_tran[0]] + (1-w) * \
+                              self.trans_mat[row_tran[0], row_tran[1]]
+            for col in range(k_trans):
                 col_tran = trans_list[col]
                 # substitution cost as a weighted average
                 self.subs_mat[row, col] = w * self.subs_state_mat[row_tran[
@@ -293,7 +301,8 @@ class Sequence_OMtransition(Sequence_base):
                                                                       0],
                                                                   col_tran[
                                                                       1]]))
-        self.indel = 10 #temporary
+
+        # self.indel = 10 #temporary
 
         # Transform sequences of states into sequences of transitions.
         y_tran_index = np.zeros((self.n, self.t - 1), dtype=int)
