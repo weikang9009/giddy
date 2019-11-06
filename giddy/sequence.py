@@ -153,7 +153,7 @@ class Sequence(object):
     """
 
     def __init__(self, y, subs_mat=None, dist_type=None,
-                 indel=None, cluster_type=None):
+                 indel=None, indel_prop=None, cluster_type=None):
 
         y = np.asarray(y)
         merged = list(itertools.chain.from_iterable(y))
@@ -171,82 +171,94 @@ class Sequence(object):
         y_int = np.array(y_int)
 
         if subs_mat is None or indel is None:
-            if dist_type is None:
-                raise ValueError("Please specify a proper `dist_type` or "
-                                 "`subs_mat` and `indel` to proceed!")
+            if dist_type.lower() == "interval":
+                self.indel = self.k - 1
+                self.subs_mat = np.zeros((self.k, self.k))
+                for i in range(0, self.k - 1):
+                    for j in range(i + 1, self.k):
+                        self.subs_mat[i, j] = j - i
+                        self.subs_mat[j, i] = j - i
+                self._om_dist(y_int)
+
+            elif dist_type.lower() == "hamming":
+                if len(y_int.shape) != 2:
+                    raise ValueError(
+                        'hamming distance cannot be calculated for '
+                        'sequences of unequal lengths!')
+                hamming_dist = d.pdist(y_int, metric='hamming') * \
+                               y_int.shape[1]
+                self.seq_dis_mat = hamming_dist
+
+            elif dist_type.lower() == "arbitrary":
+                if self.indel is None:
+                    if indel_prop is None:
+                        self.indel = 1
+                    else:
+                        self.indel = indel_prop
+                mat = np.ones((self.k, self.k))
+                np.fill_diagonal(mat, 0)
+                self.subs_mat = mat
+                self._om_dist(y_int)
+
+            elif dist_type.lower() == "markov":
+                p = Markov(y_int).p
+                mat = (2 - (p + p.T)) / 2
+                np.fill_diagonal(mat, 0)
+                self.subs_mat = mat
+                if self.indel is None:
+                    if indel_prop is None:
+                        self.indel = 1
+                    else:
+                        self.indel = indel_prop * mat.max()
+                self._om_dist(y_int)
+
+            elif dist_type.lower() == "tran":  # sequence of transitions
+                if self.indel is None:
+                    if indel_prop is None:
+                        self.indel = 2
+                    else:
+                        self.indel = indel_prop
+                y_uni = np.unique(y_int)
+                dict_trans_state = {}
+                trans_list = []
+                for i, tran in enumerate(itertools.product([-1], y_uni)):
+                    trans_list.append(tran)
+                    dict_trans_state[tran] = i
+                for i, tran in enumerate(itertools.product(y_uni, y_uni)):
+                    trans_list.append(tran)
+                    dict_trans_state[tran] = i + len(y_uni)
+                subs_mat = np.ones(
+                    (self.k * (self.k + 1), self.k * (self.k +
+                                                      1)))
+                np.fill_diagonal(subs_mat, 0)
+                for row in range(self.k ** 2):
+                    row_index = row + self.k
+                    row_tran = trans_list[row_index]
+                    for col in range(self.k ** 2):
+                        col_index = col + self.k
+                        col_tran = trans_list[col_index]
+                        subs_mat[row_index, col_index] = abs(int(row_tran[0] == row_tran[1])-
+                                                             int(col_tran[0] == col_tran[1]))
+
+                self.dict_trans_state = dict_trans_state
+                self.subs_mat = subs_mat
+
+                # Transform sequences of states into sequences of transitions.
+                y_int_ext = np.insert(y_int, 0, -1, axis=1)
+                y_tran_index = np.zeros_like(y_int)
+                y_tran = []
+                for i in range(y_int.shape[1]):
+                    y_tran.append(
+                        list(zip(y_int_ext[:, i], y_int_ext[:, i + 1])))
+                for i in range(y_int.shape[0]):
+                    for j in range(y_int.shape[1]):
+                        y_tran_index[i, j] = dict_trans_state[y_tran[j][i]]
+                self._om_dist(y_tran_index)
+
             else:
-                if dist_type.lower() == "interval":
-                    self.indel = self.k - 1
-                    self.subs_mat = np.zeros((self.k, self.k))
-                    for i in range(0, self.k - 1):
-                        for j in range(i + 1, self.k):
-                            self.subs_mat[i, j] = j - i
-                            self.subs_mat[j, i] = j - i
-                    self._om_dist(y_int)
-
-                elif dist_type.lower() == "hamming":
-                    if len(y_int.shape) != 2:
-                        raise ValueError(
-                            'hamming distance cannot be calculated for '
-                            'sequences of unequal lengths!')
-                    hamming_dist = d.pdist(y_int, metric='hamming') * \
-                                   y_int.shape[1]
-                    self.seq_dis_mat = d.squareform(hamming_dist)
-
-                elif dist_type.lower() == "arbitrary":
-                    self.indel = 1
-                    mat = np.ones((self.k, self.k)) * 0.5
-                    np.fill_diagonal(mat, 0)
-                    self.subs_mat = mat
-                    self._om_dist(y_int)
-
-                elif dist_type.lower() == "markov":
-                    p = Markov(y_int).p
-                    self.indel = 1
-                    mat = (2 - (p + p.T)) / 2
-                    np.fill_diagonal(mat, 0)
-                    self.subs_mat = mat
-                    self._om_dist(y_int)
-
-                elif dist_type.lower() == "tran":  # sequence of transitions
-                    self.indel = 2
-                    y_uni = np.unique(y_int)
-                    dict_trans_state = {}
-                    trans_list = []
-                    for i, tran in enumerate(itertools.product([-1], y_uni)):
-                        trans_list.append(tran)
-                        dict_trans_state[tran] = i
-                    for i, tran in enumerate(itertools.product(y_uni, y_uni)):
-                        trans_list.append(tran)
-                        dict_trans_state[tran] = i + len(y_uni)
-                    subs_mat = np.ones(
-                        (self.k * (self.k + 1), self.k * (self.k +
-                                                          1)))
-                    np.fill_diagonal(subs_mat, 0)
-                    for row in range(self.k ** 2):
-                        row_index = row + self.k
-                        row_tran = trans_list[row_index]
-                        for col in range(self.k ** 2):
-                            col_index = col + self.k
-                            col_tran = trans_list[col_index]
-                            subs_mat[row_index, col_index] = abs(int(row_tran[0] == row_tran[1])-
-                                                                 int(col_tran[0] == col_tran[1]))
-
-                    self.dict_trans_state = dict_trans_state
-                    self.subs_mat = subs_mat
-
-                    # Transform sequences of states into sequences of transitions.
-                    y_int_ext = np.insert(y_int, 0, -1, axis=1)
-                    y_tran_index = np.zeros_like(y_int)
-                    y_tran = []
-                    for i in range(y_int.shape[1]):
-                        y_tran.append(
-                            list(zip(y_int_ext[:, i], y_int_ext[:, i + 1])))
-                    for i in range(y_int.shape[0]):
-                        for j in range(y_int.shape[1]):
-                            y_tran_index[i, j] = dict_trans_state[y_tran[j][i]]
-                    self._om_dist(y_tran_index)
-
+                raise ValueError(
+                    "Please specify a proper `dist_type` or "
+                    "`subs_mat` and `indel` to proceed!")
         else:
             self._om_dist(y_int)
 
@@ -333,4 +345,5 @@ class Sequence(object):
                 dict_move_index[tuple(seq1)],
                 dict_move_index[tuple(seq2)]]
 
-        self.seq_dis_mat = seq_dis_mat + seq_dis_mat.transpose()
+        # self.seq_dis_mat = seq_dis_mat + seq_dis_mat.transpose()
+        self.seq_dis_mat = d.squareform(seq_dis_mat, checks=False)
