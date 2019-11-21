@@ -239,13 +239,28 @@ class Sequence_OMtransition(Sequence_base):
 
     def __init__(self, y, subs_state_mat=None, trans_mat=None, w=0,
                  trans_type=None,
-                 subs_state_type=None, indel_state=None):
+                 subs_state_type=None, indel_state=None,
+                 future=False):
+        '''
+
+        :param y:
+        :param subs_state_mat:
+        :param trans_mat:
+        :param w:
+        :param trans_type:
+        :param subs_state_type:
+        :param indel_state:
+        :param future: whether to compare the last state.
+        '''
         Sequence_base.__init__(self, y)
         self.w = w
         self.trans_mat = trans_mat
         self.trans_type = trans_type
         self.subs_state_type = subs_state_type
-        self.indel_state = indel_state
+        if type(indel_state) is int:
+            self.indel_state = np.ones(self.k) * indel_state
+        else:
+            self.indel_state = indel_state
         self.subs_state_mat = subs_state_mat
 
         # self.indel = 2
@@ -271,7 +286,7 @@ class Sequence_OMtransition(Sequence_base):
                     k_tran = 1-p
                 self.trans_mat = k_tran
 
-        if subs_state_mat is None or indel_state is None:
+        if subs_state_mat is None:
             if subs_state_type is None:
                 raise ValueError("Please specify a proper `subs_state_type` or "
                                  "`subs_state_mat` and `indel_state` to "
@@ -281,7 +296,9 @@ class Sequence_OMtransition(Sequence_base):
                     k_subs = np.ones((self.k, self.k))
                     np.fill_diagonal(k_subs, 0)
                     self.subs_state_mat = k_subs
-                    self.indel_state = 5 * np.ones(self.k)
+                    if self.indel_state is None:
+                        self.indel_state = 5 * np.ones(self.k)
+
 
         k_trans = self.k ** 2
         self.subs_mat = np.zeros((k_trans, k_trans))
@@ -290,17 +307,23 @@ class Sequence_OMtransition(Sequence_base):
             row_tran = trans_list[row]
             self.indel[row] = w * self.indel_state[row_tran[0]] + (1-w) * \
                               self.trans_mat[row_tran[0], row_tran[1]]
+            if self.indel[row] == 0:
+                self.indel[row] = 1
             for col in range(k_trans):
                 col_tran = trans_list[col]
                 # substitution cost as a weighted average
-                self.subs_mat[row, col] = w * self.subs_state_mat[row_tran[
-                                                                       0], col_tran[0]] + \
+                if future:
+                    sub = self.subs_state_mat[row_tran[1], col_tran[1]]
+                else:
+                    sub = self.subs_state_mat[row_tran[0], col_tran[0]]
+                self.subs_mat[row, col] = w * sub + \
                                           (1 - w) * (abs(self.trans_mat[row_tran[0],
                                                                 row_tran[1]]
                                                          - self.trans_mat[col_tran[
                                                                       0],
                                                                   col_tran[
                                                                       1]]))
+
 
         # self.indel = 10 #temporary
 
@@ -313,7 +336,7 @@ class Sequence_OMtransition(Sequence_base):
             for j in range(self.t - 1):
                 y_tran_index[i, j] = dict_trans_state[y_tran[j][i]]
         # print(y_tran_index)
-
+        self.y_tran_index = y_tran_index
         self._om_dist(y_tran_index)
 
 class Sequence(object):
