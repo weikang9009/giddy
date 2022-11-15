@@ -1,12 +1,12 @@
 GeospatIal Distribution DYnamics (giddy) in PySAL
 =================================================
 
-[![Build Status](https://travis-ci.org/pysal/giddy.svg?branch=master)](https://travis-ci.org/pysal/giddy)
-[![Coverage Status](https://coveralls.io/repos/github/pysal/giddy/badge.svg?branch=master)](https://coveralls.io/github/pysal/giddy?branch=master)
+![.github/workflows/unittests.yml](https://github.com/pysal/giddy/workflows/.github/workflows/unittests.yml/badge.svg?branch=master)
+[![codecov](https://codecov.io/gh/pysal/giddy/branch/master/graph/badge.svg)](https://codecov.io/gh/pysal/giddy)
 [![Gitter room](https://badges.gitter.im/pysal/giddy.svg)](https://gitter.im/pysal/giddy)
-[![Documentation Status](https://readthedocs.org/projects/giddy/badge/?version=latest)](https://giddy.readthedocs.io/en/latest/?badge=latest)
-[![PyPI version](https://badge.fury.io/py/pypi.svg)](https://badge.fury.io/py/pypi)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2633309.svg)](https://doi.org/10.5281/zenodo.2633309)
+[![PyPI version](https://badge.fury.io/py/giddy.svg)](https://badge.fury.io/py/giddy)
+[![DOI](https://zenodo.org/badge/91390088.svg)](https://zenodo.org/badge/latestdoi/91390088)
+[![badge](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pysal/giddy/master)
 
 Giddy is an open-source python library for the analysis of dynamics of
 longitudinal spatial data. Originating from the spatial dynamics module
@@ -21,14 +21,14 @@ role of space in the evolution of distributions over time.
 Documentation
 -------------
 
-Online documentation is available [here](https://giddy.readthedocs.io).
+Online documentation is available [here](http://pysal.org/giddy/).
 
 
 Features
 --------
 - Directional LISA, inference and visualization as rose diagram
 
-[![rose_conditional](figs/rose_conditional.png)](notebooks/directional.ipynb)
+[![rose_conditional](figs/rose_conditional.png)](notebooks/DirectionalLISA.ipynb)
 
 *Above shows the rose diagram (directional LISAs) for US states incomes across 1969-2009 conditional on relative incomes in 1969.*
 
@@ -42,17 +42,19 @@ Features
         - Neighbor set LIMA and inference
         - Neighborhood set LIMA and inference
 
-[![us_neigborsetLIMA](figs/us_neigborsetLIMA.png)](notebooks/Rank%20based%20Methods.ipynb)
+[![us_neigborsetLIMA](figs/us_neigborsetLIMA.png)](notebooks/RankBasedMethods.ipynb)
 
 - Income mobility measures
 
 Examples
 --------
 
-* [Directional LISA](notebooks/directional.ipynb)
-* [Markov based methods](notebooks/Markov%20Based%20Methods.ipynb)
-* [Rank based methods](notebooks/Rank%20based%20Methods.ipynb)
-* [Mobility measures](notebooks/Mobility%20measures.ipynb)
+* [Directional LISA](notebooks/DirectionalLISA.ipynb)
+* [Markov based methods](notebooks/MarkovBasedMethods.ipynb)
+* [Rank Markov methods](notebooks/RankMarkov.ipynb)
+* [Mobility measures](notebooks/MobilityMeasures.ipynb)
+* [Rank based methods](notebooks/RankBasedMethods.ipynb)
+* [Sequence methods (Optimal matching)](notebooks/Sequence.ipynb)
 
 Installation
 ------------
@@ -71,16 +73,18 @@ pip install https://github.com/pysal/giddy/archive/master.zip
 
 #### Requirements
 
-- libpysal
-- esda
-- mapclassify
+- scipy>=1.3.0
+- libpysal>=4.0.1
+- mapclassify>=2.1.1
+- esda>=2.1.1
+- quantecon>=0.4.7
 
 Contribute
 ----------
 
 PySAL-giddy is under active development and contributors are welcome.
 
-If you have any suggestion, feature request, or bug report, please open a new [issue](https://github.com/pysal/giddy/issues) on GitHub. To submit patches, please follow the PySAL development [guidelines](http://pysal.readthedocs.io/en/latest/developers/index.html) and open a [pull request](https://github.com/pysal/giddy). Once your changes get merged, you’ll automatically be added to the [Contributors List](https://github.com/pysal/giddy/graphs/contributors).
+If you have any suggestion, feature request, or bug report, please open a new [issue](https://github.com/pysal/giddy/issues) on GitHub. To submit patches, please follow the PySAL development [guidelines](https://github.com/pysal/pysal/wiki) and open a [pull request](https://github.com/pysal/giddy). Once your changes get merged, you’ll automatically be added to the [Contributors List](https://github.com/pysal/giddy/graphs/contributors).
 
 Support
 -------
@@ -97,23 +101,24 @@ BibTeX Citation
 ---------------
 
 ```
-@misc{giddy_2019_2633309,
+@software{wei_kang_2020_3887455,
   author       = {Wei Kang and
                   Sergio Rey and
                   Philip Stephens and
                   Nicholas Malizia and
-                  Levi John Wolf and
-                  Stefanie Lumnitz and
-                  jlaura and
-                  Charles Schmidt and
-                  eli knaap and
                   James Gaboardi and
-                  Andy Eschbacher},
-  title        = {pysal/giddy: giddy 2.1.0},
-  month        = apr,
-  year         = 2019,
-  doi          = {10.5281/zenodo.2633309},
-  url          = {https://doi.org/10.5281/zenodo.2633309}
+                  Stefanie Lumnitz and
+                  Levi John Wolf and
+                  Charles Schmidt and
+                  Jay Laura and
+                  Eli Knaap},
+  title        = {pysal/giddy: Release v2.3.3},
+  month        = jun,
+  year         = 2020,
+  publisher    = {Zenodo},
+  version      = {v2.3.3},
+  doi          = {10.5281/zenodo.3887455},
+  url          = {https://doi.org/10.5281/zenodo.3887455}
 }
 ```
 

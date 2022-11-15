@@ -1,3 +1,177 @@
+# Version 2.3.3 (2020-06-10)
+
+This release does not add new functionalities for spatiotemporal analytics. Instead, it features the additional support of python 3.8 and the migration of the documentation website host from readthedocs to GitHub Page. The new docs website is http://pysal.org/giddy. 
+
+In addition, two GitHub workflows for (1) [continuous integration](https://github.com/pysal/giddy/actions?query=workflow%3A%22Continuous+Integration%22) and (2) [building and releasing the package to pypi and github](https://github.com/pysal/giddy/actions?query=workflow%3A%22Build%2C+Release%2C+and+publish%22) are configured to automate these maintenance process with GitHub Actions.
+
+We closed a total of 65 issues (enhancements and bug fixes) through 30 pull requests, since our last release on 2019-12-20. (A complete history of release details is reported in [CHANGELOG.md](https://github.com/pysal/giddy/blob/master/CHANGELOG.md)).
+
+## Issues Closed
+  - version bump to v2.3.3 (#158)
+  - (bug) pytest-runner is deprecated (#157)
+  - Prepare for releasing v2.3.2 as v2.3.1 is broken (#156)
+  - Follow-up fixes for the automatic release of v2.3.1 with github actions (#155)
+  - Prepare for a formal release of giddy v2.3.1 with GitHub actions (#154)
+  - fix for github actions release (name of changelog) (#153)
+  - GitHub actions (packing and releasing) - pack the updated changelog to the built distribution (#152)
+  - Fixes for building and releasing with github actions (#151)
+  - (bug) fix workflow of building and releasing  (#150)
+  - Name of the passwords are capitalized (#149)
+  - Version bump for building and releasing with GitHub actions (testing) (#148)
+  - Give a name to the continuous testing workflow (#147)
+  - (bug) fix workflow of GitHub actions for building and releasing a package (#146)
+  - release and publish with github actions (#145)
+  - CI only testing against master branch (#143)
+  - Update README (#144)
+  - badges for CI with github actions and codecov (#141)
+  - migrate from readthedocs to github page for docs hosting (#142)
+  - fix docs (with nbsphinx) (#140)
+  - Continuous integration using GitHub Actions (#139)
+  - add requirements on quantecon (>=0.4.7) (#138)
+  - code formatting with black (#137)
+  - spatial_dynamics.interaction migration? (#124)
+  - remove accidentally added testing notebook (#136)
+  - Binder for examples is missing dependencies (#132)
+  - (bug) adding missing dependencies for Binder  (#135)
+  - output for classic Markov needs slight rewording (#133)
+  - rewording summary output for Markov chains (#134)
+  - (bug) sojourn_time for p with rows of 0s (#131)
+  - Links broken with https://github.com/pysal/giddy/tutorial (#129)
+  - fix for #129 (#130)
+  - github page redirected to readthedocs page (#128)
+  - Extend functions for Markov classes to deal with non-ergodic Markov chains (#107)
+  - prepare for releasing V2.3.0 (#127)
+  - (ENH) Extend functions for Markov classes to deal with non-ergodic Markov chains (#109)
+
+## Pull Requests
+  - version bump to v2.3.3 (#158)
+  - (bug) pytest-runner is deprecated (#157)
+  - Prepare for releasing v2.3.2 as v2.3.1 is broken (#156)
+  - Follow-up fixes for the automatic release of v2.3.1 with github actions (#155)
+  - Prepare for a formal release of giddy v2.3.1 with GitHub actions (#154)
+  - fix for github actions release (name of changelog) (#153)
+  - GitHub actions (packing and releasing) - pack the updated changelog to the built distribution (#152)
+  - Fixes for building and releasing with github actions (#151)
+  - (bug) fix workflow of building and releasing  (#150)
+  - Name of the passwords are capitalized (#149)
+  - Version bump for building and releasing with GitHub actions (testing) (#148)
+  - Give a name to the continuous testing workflow (#147)
+  - (bug) fix workflow of GitHub actions for building and releasing a package (#146)
+  - release and publish with github actions (#145)
+  - CI only testing against master branch (#143)
+  - Update README (#144)
+  - badges for CI with github actions and codecov (#141)
+  - migrate from readthedocs to github page for docs hosting (#142)
+  - fix docs (with nbsphinx) (#140)
+  - Continuous integration using GitHub Actions (#139)
+  - add requirements on quantecon (>=0.4.7) (#138)
+  - code formatting with black (#137)
+  - remove accidentally added testing notebook (#136)
+  - (bug) adding missing dependencies for Binder  (#135)
+  - rewording summary output for Markov chains (#134)
+  - (bug) sojourn_time for p with rows of 0s (#131)
+  - fix for #129 (#130)
+  - github page redirected to readthedocs page (#128)
+  - prepare for releasing V2.3.0 (#127)
+  - (ENH) Extend functions for Markov classes to deal with non-ergodic Markov chains (#109)
+
+The following individuals contributed to this release:
+
+  - Wei Kang
+  - Serge Rey
+  - James Gaboardi
+  
+# Version 2.3.0 (2019-12-20)
+
+We closed a total of 11 issues (enhancements and bug fixes) through 5 pull requests, since our last release on 2019-09-06.
+
+## Issues Closed
+  - (ENH) Extend functions for Markov classes to deal with non-ergodic Markov chains (#109)
+  - travis CI: pip install from git clone (#126)
+  - rewrite utility function "get_lower" using numpy's more efficient functionality (#125)
+  - Release version 2.2.2 for bug fix  (#121)
+  - prepare for new release: version 2.2.2  (#123)
+  - remove the parameter in plt.show() due to the API change in Matplotlib (deprecation) (#122)
+
+## Pull Requests
+  - (ENH) Extend functions for Markov classes to deal with non-ergodic Markov chains (#109)
+  - travis CI: pip install from git clone (#126)
+  - rewrite utility function "get_lower" using numpy's more efficient functionality (#125)
+  - prepare for new release: version 2.2.2  (#123)
+  - remove the parameter in plt.show() due to the API change in Matplotlib (deprecation) (#122)
+
+The following individuals contributed to this release:
+
+  - Wei Kang
+  - James Gaboardi
+
+# Version 2.2.2 (2019-09-06)
+
+We closed a total of 21 issues (enhancements and bug fixes) through 9 pull requests, since our last release on 2019-07-25.
+
+## Issues Closed
+  - remove the parameter in plt.show() due to the API change in Matplotlib (deprecation) (#122)
+  - development guidelines link in README.md (#119)
+  - BUG: Fix for correct handling of ties in Tau (#118)
+  - resolving broken dev link (#120)
+  - initialization of ECount parameter in Kendall's Tau (#117)
+  - (bug) debug travis-ci  (#116)
+  - docs building is failing (#114)
+  - (docs, bug) fix docs building and configure nbsphinx to work with binder in docs tutorials (#115)
+  -  (docs) rename notebooks for configuring nbsphinx and binder (#113)
+  - docs updates for v2.2.1 (#112)
+  - update dependency versions (#111)
+  - Prepare for new release 2.2.1 which will have the addition of sequence methods (#110)
+
+## Pull Requests
+  - remove the parameter in plt.show() due to the API change in Matplotlib (deprecation) (#122)
+  - BUG: Fix for correct handling of ties in Tau (#118)
+  - resolving broken dev link (#120)
+  - (bug) debug travis-ci  (#116)
+  - (docs, bug) fix docs building and configure nbsphinx to work with binder in docs tutorials (#115)
+  -  (docs) rename notebooks for configuring nbsphinx and binder (#113)
+  - docs updates for v2.2.1 (#112)
+  - update dependency versions (#111)
+  - Prepare for new release 2.2.1 which will have the addition of sequence methods (#110)
+
+The following individuals contributed to this release:
+
+  - Wei Kang
+  - James Gaboardi
+  - Serge Rey
+  
+# Version 2.2.1 (2019-07-25)
+
+We closed a total of 21 issues (enhancements and bug fixes) through 10 pull requests, since our last release on 2019-06-20.
+
+## Issues Closed
+  - Prepare for new release 2.2.1 which will have the addition of sequence methods (#110)
+  - Is it good practice to reuse a function name as the name of a class attribute? (#108)
+  - (Docs) add tutorial page (#106)
+  - (docs)  add zenodo citation to docs landing page (#105)
+  - update Readme for v2.2.0 (#104)
+  - edits on OM variant of transitions (#103)
+  - (ENH) Sequence methods (#101)
+  - (docs) reference label style (#102)
+  - (bug) setup.py: md as long description (#100)
+  - Prepare for release 2.2.0 (#99)
+
+## Pull Requests
+  - Prepare for new release 2.2.1 which will have the addition of sequence methods (#110)
+  - (Docs) add tutorial page (#106)
+  - (docs)  add zenodo citation to docs landing page (#105)
+  - update Readme for v2.2.0 (#104)
+  - edits on OM variant of transitions (#103)
+  - (ENH) Sequence methods (#101)
+  - (docs) reference label style (#102)
+  - (bug) setup.py: md as long description (#100)
+  - Prepare for release 2.2.0 (#99)
+
+The following individuals contributed to this release:
+
+  - Wei Kang
+  - Serge Rey
+  
 # Version 2.2.0 (2019-06-20)
 
 We closed a total of 25 issues (enhancements and bug fixes) through 11 pull requests, since our last release on 2019-04-08.
