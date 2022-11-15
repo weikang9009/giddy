@@ -3,21 +3,13 @@ Markov based methods for spatial dynamics.
 """
 __author__ = "Sergio J. Rey <sjsrey@gmail.com>, Wei Kang <weikang9009@gmail.com>"
 
-__all__ = [
-    "Markov",
-    "LISA_Markov",
-    "Spatial_Markov",
-    "kullback",
-    "prais",
-    "homogeneity",
-    "FullRank_Markov",
-    "sojourn_time",
-    "GeoRank_Markov",
-]
+__all__ = ["Markov", "LISA_Markov", "Spatial_Markov", "kullback",
+           "prais", "homogeneity", "FullRank_Markov", "sojourn_time",
+           "GeoRank_Markov"]
 
 import numpy as np
-from .ergodic import steady_state, fmpt
-from .util import fill_empty_diagonals
+from .ergodic import fmpt
+from .ergodic import steady_state as STEADY_STATE
 from .components import Graph
 from scipy import stats
 from scipy.stats import rankdata
@@ -26,7 +18,6 @@ from libpysal import weights
 from esda.moran import Moran_Local
 import mapclassify as mc
 import itertools
-import quantecon as qe
 
 # TT predefine LISA transitions
 # TT[i,j] is the transition type from i to j
@@ -63,7 +54,7 @@ for i, sig_key in enumerate(sig_keys):
 
 class Markov(object):
     """
-    Classic Markov Chain estimation.
+    Classic Markov transition matrices.
 
     Parameters
     ----------
@@ -73,40 +64,13 @@ class Markov(object):
                    periods.
     classes      : array
                    (k, 1), all different classes (bins) of the matrix.
-    fill_empty_classes: bool
-                        If True, assign 1 to diagonal elements which fall in rows
-                        full of 0s to ensure p is a stochastic transition
-                        probability matrix (each row sums up to 1).
-    summary      : bool
-                   If True, print out the summary of the Markov Chain during
-                   initialization. Default is True.
 
     Attributes
     ----------
-    k            : int
-                   Number of Markov states.
     p            : array
                    (k, k), transition probability matrix.
-    num_cclasses : int
-                   Number of communicating classes.
-    cclasses_indices : list
-                       List of indices within each communicating classes.
-    num_rclasses : int
-                   Number of recurrent classes.
-    rclasses_indices : list
-                       List of indices within each recurrent classes.
-    num_astates  : int
-                   Number of absorbing states.
-    astates_indices  : list
-                       List of indices of absorbing states.
     steady_state : array
-                   Steady state distributions. If the Markov chain only has
-                   one recurrent class (num_rclasses=1), it will converge to
-                   an unique distribution in the long run, and thus steady_state
-                   is of (k, ) dimension; if the Markov chain has multiple
-                   recurrent classes (num_rclasses>1), there will be
-                   (num_rclasses) steady state distributions and steady_state
-                   will be of (num_rclasses, k) dimension.
+                   (k, ), ergodic distribution.
     transitions  : array
                    (k, k), count of transitions between each state i and j.
 
@@ -118,11 +82,6 @@ class Markov(object):
     >>> c.extend([['a','a','b'], ['a','b','c']])
     >>> c = np.array(c)
     >>> m = Markov(c)
-    The Markov Chain is irreducible and is composed by:
-    1 Recurrent class (indices):
-    [0 1 2]
-    0 Transient classes.
-    The Markov Chain has 0 absorbing states.
     >>> m.classes.tolist()
     ['a', 'b', 'c']
     >>> m.p
@@ -131,18 +90,6 @@ class Markov(object):
            [0.33333333, 0.33333333, 0.33333333]])
     >>> m.steady_state
     array([0.30769231, 0.28846154, 0.40384615])
-
-    Reducible Markov chain
-
-    >>> c = [['b','a','a'],['c','c','a'],['c','b','c']]
-    >>> m = Markov(c)
-    The Markov Chain is reducible and is composed by:
-    1 Recurrent class (indices):
-    [0]
-    1 Transient class (indices):
-    [1 2]
-    The Markov Chain has 1 absorbing state (index):
-    [0]
 
     US nominal per capita income 48 states 81 years 1929-2009
 
@@ -155,11 +102,6 @@ class Markov(object):
 
     >>> q5 = np.array([mc.Quantiles(y).yb for y in pci]).transpose()
     >>> m = Markov(q5)
-    The Markov Chain is irreducible and is composed by:
-    1 Recurrent class (indices):
-    [0 1 2 3 4]
-    0 Transient classes.
-    The Markov Chain has 0 absorbing states.
     >>> m.transitions
     array([[729.,  71.,   1.,   0.,   0.],
            [ 72., 567.,  80.,   3.,   0.],
@@ -181,11 +123,6 @@ class Markov(object):
     >>> rpci = pci/(pci.mean(axis=0))
     >>> rq = mc.Quantiles(rpci.flatten()).yb.reshape(pci.shape)
     >>> mq = Markov(rq)
-    The Markov Chain is irreducible and is composed by:
-    1 Recurrent class (indices):
-    [0 1 2 3 4]
-    0 Transient classes.
-    The Markov Chain has 0 absorbing states.
     >>> mq.transitions
     array([[707.,  58.,   7.,   1.,   0.],
            [ 50., 629.,  80.,   1.,   1.],
@@ -197,16 +134,14 @@ class Markov(object):
 
     """
 
-    def __init__(self, class_ids, classes=None, fill_empty_classes=False, summary=True):
+    def __init__(self, class_ids, classes=None):
         if classes is not None:
             self.classes = classes
         else:
             self.classes = np.unique(class_ids)
 
-        class_ids = np.array(class_ids)
         n, t = class_ids.shape
         k = len(self.classes)
-        self.k = k
         js = list(range(t - 1))
 
         classIds = self.classes.tolist()
@@ -227,77 +162,11 @@ class Markov(object):
         row_sum = transitions.sum(axis=1)
         self.p = np.dot(np.diag(1 / (row_sum + (row_sum == 0))), transitions)
 
-        if fill_empty_classes:
-            self.p = fill_empty_diagonals(self.p)
-
-        p_temp = self.p
-        if (p_temp.sum(axis=1) == 0).sum() > 0:
-            p_temp = fill_empty_diagonals(p_temp)
-        markovchain = qe.MarkovChain(p_temp)
-        self.num_cclasses = markovchain.num_communication_classes
-        self.num_rclasses = markovchain.num_recurrent_classes
-
-        self.cclasses_indices = markovchain.communication_classes_indices
-        self.rclasses_indices = markovchain.recurrent_classes_indices
-        transient = set(list(map(tuple, self.cclasses_indices))).difference(
-            set(list(map(tuple, self.rclasses_indices)))
-        )
-        self.num_tclasses = len(transient)
-        if len(transient):
-            self.tclasses_indices = [np.asarray(i) for i in transient]
-        else:
-            self.tclasses_indices = None
-        self.astates_indices = list(np.argwhere(np.diag(p_temp) == 1))
-        self.num_astates = len(self.astates_indices)
-
-        if summary:
-            if markovchain.is_irreducible:
-                print("The Markov Chain is irreducible and is composed by:")
-            else:
-                print("The Markov Chain is reducible and is composed by:")
-            if self.num_rclasses == 1:
-                print("1 Recurrent class (indices):")
-            else:
-                print("{0} Recurrent classes (indices):".format(self.num_rclasses))
-            print(*self.rclasses_indices, sep=", ")
-            if self.num_tclasses == 0:
-                print("0 Transient classes.")
-            else:
-                if self.num_tclasses == 1:
-                    print("1 Transient class (indices):")
-                else:
-                    print("{0} Transient classes (indices):".format(self.num_tclasses))
-                print(*self.tclasses_indices, sep=", ")
-            if self.num_astates == 0:
-                print("The Markov Chain has 0 absorbing states.")
-            else:
-                if self.num_astates == 1:
-                    print("The Markov Chain has 1 absorbing state (index):")
-                else:
-                    print(
-                        "The Markov Chain has {0} absorbing states (indices):".format(
-                            self.num_astates
-                        )
-                    )
-                print(*self.astates_indices, sep=", ")
-
-    @property
-    def fmpt(self):
-        if not hasattr(self, "_fmpt"):
-            self._fmpt = fmpt(self.p, fill_empty_classes=True)
-        return self._fmpt
-
     @property
     def steady_state(self):
-        if not hasattr(self, "_steady_state"):
-            self._steady_state = steady_state(self.p, fill_empty_classes=True)
+        if not hasattr(self, '_steady_state'):
+            self._steady_state = STEADY_STATE(self.p)
         return self._steady_state
-
-    @property
-    def sojourn_time(self):
-        if not hasattr(self, "_st"):
-            self._st = sojourn_time(self.p)
-        return self._st
 
 
 class Spatial_Markov(object):
@@ -345,12 +214,6 @@ class Spatial_Markov(object):
                       discretization.
     variable_name   : string
                       name of variable.
-    fill_empty_classes: bool
-                        If True, assign 1 to diagonal elements which fall in rows
-                        full of 0s to ensure each conditional transition
-                        probability matrix is a stochastic matrix (each row
-                        sums up to 1). In other words, the probability of
-                        staying at that state is 1.
 
     Attributes
     ----------
@@ -368,30 +231,24 @@ class Spatial_Markov(object):
                       (k, k), transition probability matrix for a-spatial
                       Markov.
     s               : array
-                      (k, ), steady state distribution for a-spatial Markov.
-    f               : array
-                      (k, k), first mean passage times for a-spatial Markov.
+                      (k, 1), ergodic distribution for a-spatial Markov.
     transitions     : array
                       (k, k), counts of transitions between each state i and j
                       for a-spatial Markov.
     T               : array
-                      (m, k, k), counts of transitions for each conditional
+                      (k, k, k), counts of transitions for each conditional
                       Markov.  T[0] is the matrix of transitions for
-                      observations with lags in the 0th quantile; T[m-1] is the
-                      transitions for the observations with lags in the m-1th.
+                      observations with lags in the 0th quantile; T[k-1] is the
+                      transitions for the observations with lags in the k-1th.
     P               : array
-                      (m, k, k), transition probability matrix for spatial
+                      (k, k, k), transition probability matrix for spatial
                       Markov first dimension is the conditioned on the lag.
-    S               : arraylike
-                      (m, k), steady state distributions for spatial Markov.
-                      Each row is a conditional steady state distribution.
-                      If one (or more) spatially conditional Markov chain is
-                      reducible (having more than 1 steady state distribution),
-                      this attribute is an array of m arrays of varying
-                      dimensions.
+    S               : array
+                      (k, k), steady state distributions for spatial Markov.
+                      Each row is a conditional steady_state.
     F               : array
-                      (m, k, k),first mean passage times.
-                      First dimension is conditioned on the spatial lag.
+                      (k, k, k),first mean passage times.
+                      First dimension is conditioned on the lag.
     shtest          : list
                       (k elements), each element of the list is a tuple for a
                       multinomial difference test between the steady state
@@ -560,6 +417,7 @@ class Spatial_Markov(object):
 
     >>> for f in sm.F:
     ...     print(f)
+    ...
     [[  2.29835259  28.95614035  46.14285714  80.80952381 279.42857143]
      [ 33.86549708   3.79459555  22.57142857  57.23809524 255.85714286]
      [ 43.60233918   9.73684211   4.91085714  34.66666667 233.28571429]
@@ -689,46 +547,6 @@ class Spatial_Markov(object):
      [0.         0.         0.05660377 0.90566038 0.03773585]
      [0.         0.         0.         0.03932584 0.96067416]]
 
-    (3.1) As we can see from the above estimated conditional transition
-    probability matrix, some rows are full of zeros which violate the
-    requirement of a transition probability matrix that every row sums to 1.
-    We can easily adjust this assigning fill_empty_classes = True when initializing
-    Spatial_Markov.
-
-    >>> sm = Spatial_Markov(rpci, w, cutoffs=cc, lag_cutoffs=cc, fill_empty_classes=True)
-    >>> for p in sm.P:
-    ...     print(p)
-    [[0.96703297 0.03296703 0.         0.         0.        ]
-     [0.10638298 0.68085106 0.21276596 0.         0.        ]
-     [0.         0.14285714 0.7755102  0.08163265 0.        ]
-     [0.         0.         0.5        0.5        0.        ]
-     [0.         0.         0.         0.         1.        ]]
-    [[0.88636364 0.10606061 0.00757576 0.         0.        ]
-     [0.04402516 0.89308176 0.06289308 0.         0.        ]
-     [0.         0.05882353 0.8627451  0.07843137 0.        ]
-     [0.         0.         0.13846154 0.86153846 0.        ]
-     [0.         0.         0.         0.         1.        ]]
-    [[0.78082192 0.17808219 0.02739726 0.01369863 0.        ]
-     [0.03488372 0.90406977 0.05813953 0.00290698 0.        ]
-     [0.         0.05919003 0.84735202 0.09034268 0.00311526]
-     [0.         0.         0.05811623 0.92985972 0.01202405]
-     [0.         0.         0.         0.14285714 0.85714286]]
-    [[0.82692308 0.15384615 0.         0.01923077 0.        ]
-     [0.0703125  0.7890625  0.125      0.015625   0.        ]
-     [0.00295858 0.06213018 0.82248521 0.10946746 0.00295858]
-     [0.         0.00185529 0.07606679 0.88497217 0.03710575]
-     [0.         0.         0.         0.07803468 0.92196532]]
-    [[1.         0.         0.         0.         0.        ]
-     [0.         1.         0.         0.         0.        ]
-     [0.         0.06666667 0.9        0.03333333 0.        ]
-     [0.         0.         0.05660377 0.90566038 0.03773585]
-     [0.         0.         0.         0.03932584 0.96067416]]
-    >>> sm.S[0]
-    array([[0.54148249, 0.16780007, 0.24991499, 0.04080245, 0.        ],
-           [0.        , 0.        , 0.        , 0.        , 1.        ]])
-    >>> sm.S[2]
-    array([0.03607655, 0.22667277, 0.25883041, 0.43607249, 0.04234777])
-
     (4) Spatial_Markov also accept discrete time series and calculate
     categorical spatial lags on which several transition probability matrices
     are conditioned.
@@ -773,20 +591,9 @@ class Spatial_Markov(object):
 
     """
 
-    def __init__(
-        self,
-        y,
-        w,
-        k=4,
-        m=4,
-        permutations=0,
-        fixed=True,
-        discrete=False,
-        cutoffs=None,
-        lag_cutoffs=None,
-        variable_name=None,
-        fill_empty_classes=False,
-    ):
+    def __init__(self, y, w, k=4, m=4, permutations=0, fixed=True,
+                 discrete=False, cutoffs=None, lag_cutoffs=None,
+                 variable_name=None):
 
         y = np.asarray(y)
         self.fixed = fixed
@@ -810,16 +617,13 @@ class Spatial_Markov(object):
             self.lclass_ids = self.class_ids
         else:
             self.class_ids, self.cutoffs, self.k = self._maybe_classify(
-                y, k=k, cutoffs=self.cutoffs
-            )
+                y, k=k, cutoffs=self.cutoffs)
             self.classes = np.arange(self.k)
 
-        classic = Markov(
-            self.class_ids, fill_empty_classes=fill_empty_classes, summary=False
-        )
+        classic = Markov(self.class_ids)
         self.p = classic.p
         self.transitions = classic.transitions
-        self.T, self.P = self._calc(y, w, fill_empty_classes=fill_empty_classes)
+        self.T, self.P = self._calc(y, w)
 
         if permutations:
             nrp = np.random.permutation
@@ -832,50 +636,43 @@ class Spatial_Markov(object):
                 x2_realizations[perm] = x2s
                 if x2s >= self.x2:
                     counter += 1
-            self.x2_rpvalue = (counter + 1.0) / (permutations + 1.0)
+            self.x2_rpvalue = (counter + 1.0) / (permutations + 1.)
             self.x2_realizations = x2_realizations
 
     @property
     def s(self):
-        if not hasattr(self, "_s"):
-            self._s = steady_state(self.p)
+        if not hasattr(self, '_s'):
+            self._s = STEADY_STATE(self.p)
         return self._s
 
     @property
     def S(self):
-        if not hasattr(self, "_S"):
-            _S = []
+        if not hasattr(self, '_S'):
+            S = np.zeros_like(self.p)
             for i, p in enumerate(self.P):
-                _S.append(steady_state(p))
-            # if np.array(_S).dtype is np.dtype('O'):
-            self._S = np.asarray(_S)
+                S[i] = STEADY_STATE(p)
+            self._S = np.asarray(S)
         return self._S
 
     @property
-    def f(self):
-        if not hasattr(self, "_f"):
-            self._f = fmpt(self.p)
-        return self._f
-
-    @property
     def F(self):
-        if not hasattr(self, "_F"):
+        if not hasattr(self, '_F'):
             F = np.zeros_like(self.P)
             for i, p in enumerate(self.P):
-                F[i] = fmpt(np.asarray(p))
+                F[i] = fmpt(np.asmatrix(p))
             self._F = np.asarray(F)
         return self._F
 
     # bickenbach and bode tests
     @property
     def ht(self):
-        if not hasattr(self, "_ht"):
+        if not hasattr(self, '_ht'):
             self._ht = homogeneity(self.T)
         return self._ht
 
     @property
     def Q(self):
-        if not hasattr(self, "_Q"):
+        if not hasattr(self, '_Q'):
             self._Q = self.ht.Q
         return self._Q
 
@@ -902,51 +699,47 @@ class Spatial_Markov(object):
     # shtests
     @property
     def shtest(self):
-        if not hasattr(self, "_shtest"):
+        if not hasattr(self, '_shtest'):
             self._shtest = self._mn_test()
         return self._shtest
 
     @property
     def chi2(self):
-        if not hasattr(self, "_chi2"):
+        if not hasattr(self, '_chi2'):
             self._chi2 = self._chi2_test()
         return self._chi2
 
     @property
     def x2(self):
-        if not hasattr(self, "_x2"):
+        if not hasattr(self, '_x2'):
             self._x2 = sum([c[0] for c in self.chi2])
         return self._x2
 
     @property
     def x2_pvalue(self):
-        if not hasattr(self, "_x2_pvalue"):
+        if not hasattr(self, '_x2_pvalue'):
             self._x2_pvalue = 1 - stats.chi2.cdf(self.x2, self.x2_dof)
         return self._x2_pvalue
 
     @property
     def x2_dof(self):
-        if not hasattr(self, "_x2_dof"):
+        if not hasattr(self, '_x2_dof'):
             k = self.k
             self._x2_dof = k * (k - 1) * (k - 1)
         return self._x2_dof
 
-    def _calc(self, y, w, fill_empty_classes=False):
-        """Helper to estimate spatial lag conditioned Markov transition
+    def _calc(self, y, w):
+        '''Helper to estimate spatial lag conditioned Markov transition
         probability matrices based on maximum likelihood techniques.
 
-        If fill_empty_classes=True, assign 1 to diagonal elements which fall in rows
-        full of 0s to ensure each conditional transition probability matrix
-        is a stochastic matrix (each row sums up to 1).
-
-        """
+        '''
         if self.discrete:
-            self.lclass_ids = weights.lag_categorical(w, self.class_ids, ties="tryself")
+            self.lclass_ids = weights.lag_categorical(w, self.class_ids,
+                                                      ties="tryself")
         else:
             ly = weights.lag_spatial(w, y)
             self.lclass_ids, self.lag_cutoffs, self.m = self._maybe_classify(
-                ly, self.m, self.lag_cutoffs
-            )
+                ly, self.m, self.lag_cutoffs)
             self.lclasses = np.arange(self.m)
 
         T = np.zeros((self.m, self.k, self.k))
@@ -954,19 +747,15 @@ class Spatial_Markov(object):
         for t1 in range(t - 1):
             t2 = t1 + 1
             for i in range(n):
-                T[
-                    self.lclass_ids[i, t1], self.class_ids[i, t1], self.class_ids[i, t2]
-                ] += 1
+                T[self.lclass_ids[i, t1], self.class_ids[i, t1],
+                    self.class_ids[i, t2]] += 1
 
         P = np.zeros_like(T)
         for i, mat in enumerate(T):
             row_sum = mat.sum(axis=1)
             row_sum = row_sum + (row_sum == 0)
-            p_i = np.array(np.diag(1.0 / row_sum)).dot(np.array(mat))
+            p_i = np.matrix(np.diag(1. / row_sum) * np.matrix(mat))
             P[i] = p_i
-
-        if fill_empty_classes:
-            P = fill_empty_diagonals(P)
         return T, P
 
     def _mn_test(self):
@@ -976,7 +765,8 @@ class Spatial_Markov(object):
         """
         n0, n1, n2 = self.T.shape
         rn = list(range(n0))
-        mat = [self._ssmnp_test(self.s, self.S[i], self.T[i].sum()) for i in rn]
+        mat = [self._ssmnp_test(
+            self.s, self.S[i], self.T[i].sum()) for i in rn]
         return mat
 
     def _ssmnp_test(self, p1, p2, nt):
@@ -1029,7 +819,8 @@ class Spatial_Markov(object):
 
         class_names = ["C%d" % i for i in range(self.k)]
         regime_names = ["LAG%d" % i for i in range(self.k)]
-        ht = homogeneity(self.T, class_names=class_names, regime_names=regime_names)
+        ht = homogeneity(self.T, class_names=class_names,
+                         regime_names=regime_names)
         title = "Spatial Markov Test"
         if self.variable_name:
             title = title + ": " + self.variable_name
@@ -1039,9 +830,9 @@ class Spatial_Markov(object):
             ht.summary(title=title)
 
     def _maybe_classify(self, y, k, cutoffs):
-        """Helper method for classifying continuous data.
+        '''Helper method for classifying continuous data.
 
-        """
+        '''
 
         rows, cols = y.shape
         if cutoffs is None:
@@ -1052,14 +843,14 @@ class Spatial_Markov(object):
                 k = len(cutoffs)
                 return yb, cutoffs[:-1], k
             else:
-                yb = np.array(
-                    [mc.Quantiles(y[:, i], k=k).yb for i in np.arange(cols)]
-                ).transpose()
+                yb = np.array([mc.Quantiles(y[:, i], k=k).yb for i in
+                               np.arange(cols)]).transpose()
                 return yb, None, k
         else:
             cutoffs = list(cutoffs) + [np.inf]
             cutoffs = np.array(cutoffs)
-            yb = mc.UserDefined(y.flatten(), np.array(cutoffs)).yb.reshape(y.shape)
+            yb = mc.User_Defined(y.flatten(), np.array(cutoffs)).yb.reshape(
+                y.shape)
             k = len(cutoffs)
             return yb, cutoffs[:-1], k
 
@@ -1130,8 +921,8 @@ def chi2(T1, T2):
     dof2 = sum(rs2nz)
     rs2 = rs2 + (rs2 == 0)
     dof = (dof1 - 1) * (dof2 - 1)
-    p = np.diag(1 / rs2).dot(np.array(T2))
-    E = np.diag(rs1).dot(np.array(p))
+    p = np.diag(1 / rs2) * np.matrix(T2)
+    E = np.diag(rs1) * np.matrix(p)
     num = T1 - E
     num = np.multiply(num, num)
     E = E + (E == 0)
@@ -1183,28 +974,27 @@ class LISA_Markov(Markov):
                    quadrant in period 2).
 
                    .. table:: Move Types
-                      :widths: auto
 
-                      ==  ==     =========
-                      q1  q2     move_type
-                      ==  ==     =========
-                      1   1      1
-                      1   2      2
-                      1   3      3
-                      1   4      4
-                      2   1      5
-                      2   2      6
-                      2   3      7
-                      2   4      8
-                      3   1      9
-                      3   2      10
-                      3   3      11
-                      3   4      12
-                      4   1      13
-                      4   2      14
-                      4   3      15
-                      4   4      16
-                      ==  ==     =========
+                   ==  ==     =========
+                   q1  q2     move_type
+                   ==  ==     =========
+                   1   1      1
+                   1   2      2
+                   1   3      3
+                   1   4      4
+                   2   1      5
+                   2   2      6
+                   2   3      7
+                   2   4      8
+                   3   1      9
+                   3   2      10
+                   3   3      11
+                   3   4      12
+                   4   1      13
+                   4   2      14
+                   4   3      15
+                   4   4      16
+                   ==  ==     =========
 
     p            : array
                    (k, k), transition probability matrix.
@@ -1217,57 +1007,57 @@ class LISA_Markov(Markov):
                         significant in period t, else st=0 (if permutations >
                         0).
 
-                        .. table:: Significant Moves1
+                        .. Table:: Significant Moves1
 
-                           ===============  ===================
-                           (s1,s2)          move_type
-                           ===============  ===================
-                           (1,1)            [1, 16]
-                           (1,0)            [17, 32]
-                           (0,1)            [33, 48]
-                           (0,0)            [49, 64]
-                           ===============  ===================
+                        ===============  ===================
+                        (s1,s2)          move_type
+                        ===============  ===================
+                        (1,1)            [1, 16]
+                        (1,0)            [17, 32]
+                        (0,1)            [33, 48]
+                        (0,0)            [49, 64]
+                        ===============  ===================
 
-                        .. table:: Significant Moves2
+                        .. Table:: Significant Moves2
 
-                           == ==  ==  ==  =========
-                           q1 q2  s1  s2  move_type
-                           == ==  ==  ==  =========
-                           1  1   1   1   1
-                           1  2   1   1   2
-                           1  3   1   1   3
-                           1  4   1   1   4
-                           2  1   1   1   5
-                           2  2   1   1   6
-                           2  3   1   1   7
-                           2  4   1   1   8
-                           3  1   1   1   9
-                           3  2   1   1   10
-                           3  3   1   1   11
-                           3  4   1   1   12
-                           4  1   1   1   13
-                           4  2   1   1   14
-                           4  3   1   1   15
-                           4  4   1   1   16
-                           1  1   1   0   17
-                           1  2   1   0   18
-                           .  .   .   .    .
-                           .  .   .   .    .
-                           4  3   1   0   31
-                           4  4   1   0   32
-                           1  1   0   1   33
-                           1  2   0   1   34
-                           .  .   .   .    .
-                           .  .   .   .    .
-                           4  3   0   1   47
-                           4  4   0   1   48
-                           1  1   0   0   49
-                           1  2   0   0   50
-                           .  .   .   .    .
-                           .  .   .   .    .
-                           4  3   0   0   63
-                           4  4   0   0   64
-                           == ==  ==  ==  =========
+                        == ==  ==  ==  =========
+                        q1 q2  s1  s2  move_type
+                        == ==  ==  ==  =========
+                        1  1   1   1   1
+                        1  2   1   1   2
+                        1  3   1   1   3
+                        1  4   1   1   4
+                        2  1   1   1   5
+                        2  2   1   1   6
+                        2  3   1   1   7
+                        2  4   1   1   8
+                        3  1   1   1   9
+                        3  2   1   1   10
+                        3  3   1   1   11
+                        3  4   1   1   12
+                        4  1   1   1   13
+                        4  2   1   1   14
+                        4  3   1   1   15
+                        4  4   1   1   16
+                        1  1   1   0   17
+                        1  2   1   0   18
+                        .  .   .   .    .
+                        .  .   .   .    .
+                        4  3   1   0   31
+                        4  4   1   0   32
+                        1  1   0   1   33
+                        1  2   0   1   34
+                        .  .   .   .    .
+                        .  .   .   .    .
+                        4  3   0   1   47
+                        4  4   0   1   48
+                        1  1   0   0   49
+                        1  2   0   0   50
+                        .  .   .   .    .
+                        .  .   .   .    .
+                        4  3   0   0   63
+                        4  4   0   0   64
+                        == ==  ==  ==  =========
 
     steady_state : array
                    (k, ), ergodic distribution.
@@ -1283,7 +1073,6 @@ class LISA_Markov(Markov):
     >>> import libpysal
     >>> import numpy as np
     >>> from giddy.markov import LISA_Markov
-    >>> np.set_printoptions(suppress=True) #prevent scientific format
     >>> f = libpysal.io.open(libpysal.examples.get_path("usjoin.csv"))
     >>> years = list(range(1929, 2010))
     >>> pci = np.array([f.by_col[str(y)] for y in years]).transpose()
@@ -1294,10 +1083,10 @@ class LISA_Markov(Markov):
     >>> lm.steady_state
     array([0.28561505, 0.14190226, 0.40493672, 0.16754598])
     >>> lm.transitions
-    array([[1087.,   44.,    4.,   34.],
-           [  41.,  470.,   36.,    1.],
-           [   5.,   34., 1422.,   39.],
-           [  30.,    1.,   40.,  552.]])
+    array([[1.087e+03, 4.400e+01, 4.000e+00, 3.400e+01],
+           [4.100e+01, 4.700e+02, 3.600e+01, 1.000e+00],
+           [5.000e+00, 3.400e+01, 1.422e+03, 3.900e+01],
+           [3.000e+01, 1.000e+00, 4.000e+01, 5.520e+02]])
     >>> lm.p
     array([[0.92985458, 0.03763901, 0.00342173, 0.02908469],
            [0.07481752, 0.85766423, 0.06569343, 0.00182482],
@@ -1334,19 +1123,19 @@ class LISA_Markov(Markov):
     Actual transitions of LISAs
 
     >>> lm.transitions
-    array([[1087.,   44.,    4.,   34.],
-           [  41.,  470.,   36.,    1.],
-           [   5.,   34., 1422.,   39.],
-           [  30.,    1.,   40.,  552.]])
+    array([[1.087e+03, 4.400e+01, 4.000e+00, 3.400e+01],
+           [4.100e+01, 4.700e+02, 3.600e+01, 1.000e+00],
+           [5.000e+00, 3.400e+01, 1.422e+03, 3.900e+01],
+           [3.000e+01, 1.000e+00, 4.000e+01, 5.520e+02]])
 
     Expected transitions of LISAs under the null y and wy are moving
     independently of one another
 
     >>> lm.expected_t
-    array([[1123.2809778 ,   11.53773565,    0.34752216,   33.83376439],
-           [   3.50272664,  528.47388155,   15.917888  ,    0.10550381],
-           [   0.15387808,   23.21635562, 1466.90710117,    9.72266513],
-           [   9.60775143,    0.09868563,    6.23537392,  607.05818902]])
+    array([[1.12328098e+03, 1.15377356e+01, 3.47522158e-01, 3.38337644e+01],
+           [3.50272664e+00, 5.28473882e+02, 1.59178880e+01, 1.05503814e-01],
+           [1.53878082e-01, 2.32163556e+01, 1.46690710e+03, 9.72266513e+00],
+           [9.60775143e+00, 9.86856346e-02, 6.23537392e+00, 6.07058189e+02]])
 
     If the LISA classes are to be defined according to GeoDa, the `geoda_quad`
     option has to be set to true
@@ -1359,16 +1148,16 @@ class LISA_Markov(Markov):
 
     """
 
-    def __init__(
-        self, y, w, permutations=0, significance_level=0.05, geoda_quads=False
-    ):
+    def __init__(self, y, w, permutations=0,
+                 significance_level=0.05, geoda_quads=False):
         y = y.transpose()
         pml = Moran_Local
         gq = geoda_quads
-        ml = [pml(yi, w, permutations=permutations, geoda_quads=gq) for yi in y]
+        ml = ([pml(yi, w, permutations=permutations, geoda_quads=gq)
+               for yi in y])
         q = np.array([mli.q for mli in ml]).transpose()
         classes = np.arange(1, 5)  # no guarantee all 4 quadrants are visited
-        Markov.__init__(self, q, classes, summary=False)
+        Markov.__init__(self, q, classes)
         self.q = q
         self.w = w
         n, k = q.shape
@@ -1402,16 +1191,20 @@ class LISA_Markov(Markov):
         r = y / ybar
         ylag = np.array([weights.lag_spatial(w, yt) for yt in y])
         rlag = ylag / ybar
-        rc = r < 1.0
-        rlagc = rlag < 1.0
-        markov_y = Markov(rc, summary=False)
-        markov_ylag = Markov(rlagc, summary=False)
-        A = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 1, 0, 0]])
+        rc = r < 1.
+        rlagc = rlag < 1.
+        markov_y = Markov(rc)
+        markov_ylag = Markov(rlagc)
+        A = np.matrix([[1, 0, 0, 0],
+                       [0, 0, 1, 0],
+                       [0, 0, 0, 1],
+                       [0, 1, 0, 0]])
 
-        kp = A.dot(np.kron(markov_y.p, markov_ylag.p)).dot(A.T)
+        kp = A * np.kron(markov_y.p, markov_ylag.p) * A.T
         trans = self.transitions.sum(axis=1)
-        t1 = np.diag(trans).dot(kp)
+        t1 = np.diag(trans) * kp
         t2 = self.transitions
+        t1 = t1.getA()
         self.chi_2 = chi2(t2, t1)
         self.expected_t = t1
         self.permutations = permutations
@@ -1479,10 +1272,10 @@ class LISA_Markov(Markov):
             for key in list(self.w.neighbors.keys()):
                 idx = self.w.id2i[key]
                 i2id[idx] = key
-            sig_lisas = (self.q == quadrant) * (
-                self.p_values <= self.significance_level
-            )
-            sig_ids = [np.nonzero(sig_lisas[:, i])[0].tolist() for i in range(k)]
+            sig_lisas = (self.q == quadrant) \
+                * (self.p_values <= self.significance_level)
+            sig_ids = [np.nonzero(
+                sig_lisas[:, i])[0].tolist() for i in range(k)]
 
             neighbors = self.w.neighbors
             for t in range(k - 1):
@@ -1532,8 +1325,8 @@ class LISA_Markov(Markov):
                         ii = self.w.id2i[i]
                         components[ii, t] = c + 1
             results = {}
-            results["components"] = components
-            results["spill_over"] = spill_over
+            results['components'] = components
+            results['spill_over'] = spill_over
             return results
 
         else:
@@ -1626,9 +1419,9 @@ def kullback(F):
     chom = T1 - T4 - T2 + T3
     cdof = r * (s - 1) * (r - 1)
     results = {}
-    results["Conditional homogeneity"] = chom
-    results["Conditional homogeneity dof"] = cdof
-    results["Conditional homogeneity pvalue"] = 1 - stats.chi2.cdf(chom, cdof)
+    results['Conditional homogeneity'] = chom
+    results['Conditional homogeneity dof'] = cdof
+    results['Conditional homogeneity pvalue'] = 1 - stats.chi2.cdf(chom, cdof)
     return results
 
 
@@ -1662,7 +1455,7 @@ def prais(pmat):
     >>> f = libpysal.io.open(libpysal.examples.get_path("usjoin.csv"))
     >>> pci = np.array([f.by_col[str(y)] for y in range(1929,2010)])
     >>> q5 = np.array([mc.Quantiles(y).yb for y in pci]).transpose()
-    >>> m = Markov(q5, summary=False)
+    >>> m = Markov(q5)
     >>> m.transitions
     array([[729.,  71.,   1.,   0.,   0.],
            [ 72., 567.,  80.,   3.,   0.],
@@ -1684,12 +1477,8 @@ def prais(pmat):
     return pr
 
 
-def homogeneity(
-    transition_matrices,
-    regime_names=[],
-    class_names=[],
-    title="Markov Homogeneity Test",
-):
+def homogeneity(transition_matrices, regime_names=[], class_names=[],
+                title="Markov Homogeneity Test"):
     """
     Test for homogeneity of Markov transition probabilities across regimes.
 
@@ -1713,12 +1502,8 @@ def homogeneity(
                           an instance of Homogeneity_Results.
     """
 
-    return Homogeneity_Results(
-        transition_matrices,
-        regime_names=regime_names,
-        class_names=class_names,
-        title=title,
-    )
+    return Homogeneity_Results(transition_matrices, regime_names=regime_names,
+                               class_names=class_names, title=title)
 
 
 class Homogeneity_Results:
@@ -1752,13 +1537,8 @@ class Homogeneity_Results:
 
     """
 
-    def __init__(
-        self,
-        transition_matrices,
-        regime_names=[],
-        class_names=[],
-        title="Markov Homogeneity Test",
-    ):
+    def __init__(self, transition_matrices, regime_names=[], class_names=[],
+                 title="Markov Homogeneity Test"):
         self._homogeneity(transition_matrices)
         self.regime_names = regime_names
         self.class_names = class_names
@@ -1775,8 +1555,8 @@ class Homogeneity_Results:
         n_i = T.sum(axis=1)
         A_i = (T > 0).sum(axis=1)
         A_im = np.zeros((r, m))
-        p_ij = np.dot(np.diag(1.0 / (n_i + (n_i == 0) * 1.0)), T)
-        den = p_ij + 1.0 * (p_ij == 0)
+        p_ij = np.dot(np.diag(1. / (n_i + (n_i == 0) * 1.)), T)
+        den = p_ij + 1. * (p_ij == 0)
         b_i = np.zeros_like(A_i)
         p_ijm = np.zeros_like(M)
         # get dimensions
@@ -1789,10 +1569,10 @@ class Homogeneity_Results:
 
         for nijm in M:
             nim = nijm.sum(axis=1)
-            B[:, m] = 1.0 * (nim > 0)
-            b_i = b_i + 1.0 * (nim > 0)
-            p_ijm[m] = np.dot(np.diag(1.0 / (nim + (nim == 0) * 1.0)), nijm)
-            num = (p_ijm[m] - p_ij) ** 2
+            B[:, m] = 1. * (nim > 0)
+            b_i = b_i + 1. * (nim > 0)
+            p_ijm[m] = np.dot(np.diag(1. / (nim + (nim == 0) * 1.)), nijm)
+            num = (p_ijm[m] - p_ij)**2
             ratio = num / den
             qijm = np.dot(np.diag(nim), ratio)
             q_table[m] = qijm
@@ -1812,7 +1592,7 @@ class Homogeneity_Results:
         self.dof = int(((b_i - 1) * (A_i - 1)).sum())
         self.Q = Q
         self.Q_p_value = 1 - stats.chi2.cdf(self.Q, self.dof)
-        self.LR = LR * 2.0
+        self.LR = LR * 2.
         self.LR_p_value = 1 - stats.chi2.cdf(self.LR, self.dof)
         self.A = A_i
         self.A_im = A_im
@@ -1849,13 +1629,14 @@ class Homogeneity_Results:
         contents.append(l)
         contents.append(r)
         contents.append(lead)
-        h = "%7s %20s %20s" % ("Test", "LR", "Chi-2")
+        h = "%7s %20s %20s" % ('Test', 'LR', 'Chi-2')
         contents.append(h)
-        stat = "%7s %20.3f %20.3f" % ("Stat.", self.LR, self.Q)
+        stat = "%7s %20.3f %20.3f" % ('Stat.', self.LR, self.Q)
         contents.append(stat)
-        stat = "%7s %20d %20d" % ("DOF", self.dof, self.dof)
+        stat = "%7s %20d %20d" % ('DOF', self.dof, self.dof)
         contents.append(stat)
-        stat = "%7s %20.3f %20.3f" % ("p-value", self.LR_p_value, self.Q_p_value)
+        stat = "%7s %20.3f %20.3f" % ('p-value', self.LR_p_value,
+                                      self.Q_p_value)
         contents.append(stat)
         print(("\n".join(contents)))
         print(lead)
@@ -1868,10 +1649,9 @@ class Homogeneity_Results:
         max_col = max([len(col) for col in cols])
         col_width = max([5, max_col])  # probabilities have 5 chars
         p0 = []
-        line0 = ["{s: <{w}}".format(s="P(H0)", w=col_width)]
-        line0.extend(
-            (["{s: >{w}}".format(s=cname, w=col_width) for cname in self.class_names])
-        )
+        line0 = ['{s: <{w}}'.format(s="P(H0)", w=col_width)]
+        line0.extend((['{s: >{w}}'.format(s=cname, w=col_width) for cname in
+                       self.class_names]))
         print(("    ".join(line0)))
         p0.append("&".join(line0))
         for i, row in enumerate(self.p_h0):
@@ -1884,15 +1664,10 @@ class Homogeneity_Results:
         print(lead)
         for r, p1 in enumerate(self.p_h1):
             p0 = []
-            line0 = ["{s: <{w}}".format(s="P(%s)" % regime_names[r], w=col_width)]
-            line0.extend(
-                (
-                    [
-                        "{s: >{w}}".format(s=cname, w=col_width)
-                        for cname in self.class_names
-                    ]
-                )
-            )
+            line0 = ['{s: <{w}}'.format(s="P(%s)" %
+                                        regime_names[r], w=col_width)]
+            line0.extend((['{s: >{w}}'.format(s=cname, w=col_width) for cname
+                           in self.class_names]))
             print(("    ".join(line0)))
             p0.append("&".join(line0))
             for i, row in enumerate(p1):
@@ -1906,7 +1681,7 @@ class Homogeneity_Results:
         if file_name:
             k = self.k
             ks = str(k + 1)
-            with open(file_name, "w") as f:
+            with open(file_name, 'w') as f:
                 c = []
                 fmt = "r" * (k + 1)
                 s = "\\begin{tabular}{|%s|}\\hline\n" % fmt
@@ -1950,7 +1725,7 @@ class Homogeneity_Results:
                 f.write(s1 + s2)
 
 
-class FullRank_Markov(Markov):
+class FullRank_Markov:
     """
     Full Rank Markov in which ranks are considered as Markov states rather
     than quantiles or other discretized classes. This is one way to avoid
@@ -1962,13 +1737,6 @@ class FullRank_Markov(Markov):
                    (n, t) with t>>n, one row per observation (n total),
                    one column recording the value of each observation,
                    with as many columns as time periods.
-    fill_empty_classes: bool
-                        If True, assign 1 to diagonal elements which fall in rows
-                        full of 0s to ensure p is a stochastic transition
-                        probability matrix (each row sums up to 1).
-    summary      : bool
-                   If True, print out the summary of the Markov Chain during
-                   initialization. Default is True.
 
     Attributes
     ----------
@@ -2003,12 +1771,14 @@ class FullRank_Markov(Markov):
     >>> f = ps.io.open(ps.examples.get_path("usjoin.csv"))
     >>> pci = np.array([f.by_col[str(y)] for y in range(1929,2010)]).transpose()
     >>> m = FullRank_Markov(pci)
-    The Markov Chain is irreducible and is composed by:
-    1 Recurrent class (indices):
-    [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-     24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47]
-    0 Transient classes.
-    The Markov Chain has 0 absorbing states.
+    >>> m.ranks
+    array([[45, 45, 44, ..., 41, 40, 39],
+           [24, 25, 25, ..., 36, 38, 41],
+           [46, 47, 45, ..., 43, 43, 43],
+           ...,
+           [34, 34, 34, ..., 47, 46, 42],
+           [17, 17, 22, ..., 25, 26, 25],
+           [16, 18, 19, ...,  6,  6,  7]])
     >>> m.transitions
     array([[66.,  5.,  5., ...,  0.,  0.,  0.],
            [ 8., 51.,  9., ...,  0.,  0.,  0.],
@@ -2026,20 +1796,38 @@ class FullRank_Markov(Markov):
 
     """
 
-    def __init__(self, y, fill_empty_classes=False, summary=True):
+    def __init__(self, y):
 
         y = np.asarray(y)
         # resolve ties: All values are given a distinct rank, corresponding
         # to the order that the values occur in each cross section.
-        r_asc = np.array([rankdata(col, method="ordinal") for col in y.T]).T
+        r_asc = np.array([rankdata(col, method='ordinal') for col in y.T]).T
         # ranks by high (1) to low (n)
         self.ranks = r_asc.shape[0] - r_asc + 1
-        super(FullRank_Markov, self).__init__(
-            self.ranks, fill_empty_classes=fill_empty_classes, summary=summary
-        )
+        frm = Markov(self.ranks)
+        self.p = frm.p
+        self.transitions = frm.transitions
+
+    @property
+    def steady_state(self):
+        if not hasattr(self, '_steady_state'):
+            self._steady_state = STEADY_STATE(self.p)
+        return self._steady_state
+
+    @property
+    def fmpt(self):
+        if not hasattr(self, '_fmpt'):
+            self._fmpt = fmpt(self.p)
+        return self._fmpt
+
+    @property
+    def sojourn_time(self):
+        if not hasattr(self, '_st'):
+            self._st = sojourn_time(self.p)
+        return self._st
 
 
-def sojourn_time(p, summary=True):
+def sojourn_time(p):
     """
     Calculate sojourn time based on a given transition probability matrix.
 
@@ -2047,15 +1835,12 @@ def sojourn_time(p, summary=True):
     ----------
     p        : array
                (k, k), a Markov transition probability matrix.
-    summary  : bool
-               If True and the Markov Chain has absorbing states whose
-               sojourn time is infinitely large, print out the information
-               about the absorbing states. Default is True.
+
     Returns
     -------
              : array
                (k, ), sojourn times. Each element is the expected time a Markov
-               chain spends in each state before leaving that state.
+               chain spends in each states before leaving that state.
 
     Notes
     -----
@@ -2070,56 +1855,26 @@ def sojourn_time(p, summary=True):
     >>> sojourn_time(p)
     array([2., 1., 2.])
 
-    Non-ergodic Markov Chains with rows full of 0
-
-    >>> p = np.array([[.5, .25, .25], [.5, 0, .5],[ 0, 0, 0]])
-    >>> sojourn_time(p)
-    Sojourn times are infinite for absorbing states! In this Markov Chain, states [2] are absorbing states.
-    array([ 2.,  1., inf])
     """
-
     p = np.asarray(p)
-    if (p.sum(axis=1) == 0).sum() > 0:
-        p = fill_empty_diagonals(p)
-
-    markovchain = qe.MarkovChain(p)
     pii = p.diagonal()
 
     if not (1 - pii).all():
-        absorbing_states = np.where(pii == 1)[0]
-        non_absorbing_states = np.where(pii != 1)[0]
-        st = np.full(len(pii), np.inf)
-        if summary:
-            print(
-                "Sojourn times are infinite for absorbing states! In this "
-                "Markov Chain, states {} are absorbing states.".format(
-                    list(absorbing_states)
-                )
-            )
-        st[non_absorbing_states] = 1 / (1 - pii[non_absorbing_states])
-    else:
-        st = 1 / (1 - pii)
-    return st
+        print("Sojourn times are infinite for absorbing states!")
+    return 1 / (1 - pii)
 
 
-class GeoRank_Markov(Markov):
+class GeoRank_Markov:
     """
     Geographic Rank Markov.
     Geographic units are considered as Markov states.
 
     Parameters
     ----------
-    y            : array
-                   (n, t) with t>>n, one row per observation (n total),
-                   one column recording the value of each observation,
-                   with as many columns as time periods.
-    fill_empty_classes: bool
-                        If True, assign 1 to diagonal elements which fall in rows
-                        full of 0s to ensure p is a stochastic transition
-                        probability matrix (each row sums up to 1).
-    summary      : bool
-                   If True, print out the summary of the Markov Chain during
-                   initialization. Default is True.
+    y              : array
+                     (n, t) with t>>n, one row per observation (n total),
+                     one column recording the value of each observation,
+                     with as many columns as time periods.
 
     Attributes
     ----------
@@ -2152,12 +1907,6 @@ class GeoRank_Markov(Markov):
     >>> f = ps.io.open(ps.examples.get_path("usjoin.csv"))
     >>> pci = np.array([f.by_col[str(y)] for y in range(1929,2010)]).transpose()
     >>> m = GeoRank_Markov(pci)
-    The Markov Chain is irreducible and is composed by:
-    1 Recurrent class (indices):
-    [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-     24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47]
-    0 Transient classes.
-    The Markov Chain has 0 absorbing states.
     >>> m.transitions
     array([[38.,  0.,  8., ...,  0.,  0.,  0.],
            [ 0., 15.,  0., ...,  0.,  1.,  0.],
@@ -2202,13 +1951,37 @@ class GeoRank_Markov(Markov):
 
     """
 
-    def __init__(self, y, fill_empty_classes=False, summary=True):
+    def __init__(self, y):
         y = np.asarray(y)
         n = y.shape[0]
         # resolve ties: All values are given a distinct rank, corresponding
         # to the order that the values occur in each cross section.
-        ranks = np.array([rankdata(col, method="ordinal") for col in y.T]).T
+        ranks = np.array([rankdata(col, method='ordinal') for col in y.T]).T
         geo_ranks = np.argsort(ranks, axis=0) + 1
-        super(GeoRank_Markov, self).__init__(
-            geo_ranks, fill_empty_classes=fill_empty_classes, summary=summary
-        )
+        grm = Markov(geo_ranks)
+        self.p = grm.p
+        self.transitions = grm.transitions
+
+    @property
+    def steady_state(self):
+        if not hasattr(self, '_steady_state'):
+            self._steady_state = STEADY_STATE(self.p)
+        return self._steady_state
+
+
+    @property
+    def fmpt(self):
+        if not hasattr(self, '_fmpt'):
+            self._fmpt = fmpt(self.p)
+        return self._fmpt
+
+
+    @property
+    def sojourn_time(self):
+        if not hasattr(self, '_st'):
+            self._st = sojourn_time(self.p)
+        return self._st
+
+
+
+
