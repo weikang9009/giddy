@@ -65,18 +65,33 @@ jobs:
         if: contains(matrix.environment-file, 'dev')
       
       - name: run pytest
-        run: pytest giddy -r a -v -n auto --cov giddy --cov-report xml --color yes --cov-append --cov-report term-missing
-
-      - name: run docstring tests
-        if: contains(matrix.environment-file, '312-dev') && contains(matrix.os, 'ubuntu')
         run: |
           pytest \
+          giddy \
           -v \
           -r a \
-          -n auto \
+          -n logical \
           --color yes \
-          --cov giddy --cov-report xml --cov-append \
-          --doctest-only --doctest-continue-on-failure giddy
+          --cov giddy \
+          --cov-append \
+          --cov-report xml \
+          --cov-report term-missing
+
+      - name: run docstring tests
+        if: contains(matrix.environment-file, '313-dev') && contains(matrix.os, 'ubuntu')
+        run: |
+          pytest \
+          giddy \
+          -v \
+          -r a \
+          -n logical \
+          --color yes \
+          --cov giddy \
+          --cov-append \
+          --cov-report xml \
+          --cov-report term-missing \
+          --doctest-only \
+          --doctest-continue-on-failure 
 
       - name: codecov
         uses: codecov/codecov-action@v5
