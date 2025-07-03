@@ -2,13 +2,12 @@ name: test
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python=3.13
   # required
   - pip
   # testing
   - codecov
   - ipywidgets
-  - matplotlib
   - pytest
   - pytest-cov
   - pytest-xdist
@@ -18,6 +17,7 @@ dependencies:
     - --pre \
       --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple  \
       --extra-index-url https://pypi.org/simple
+    - matplotlib
     - numpy
     - pandas
     - scipy

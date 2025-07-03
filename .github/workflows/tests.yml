@@ -32,13 +32,14 @@ jobs:
           - ci/310-latest.yaml
           - ci/311-latest.yaml
           - ci/312-latest.yaml
-          - ci/312-dev.yaml
+          - ci/313-latest.yaml
+          - ci/313-dev.yaml
         include:
-          - environment-file: ci/312-latest.yaml
+          - environment-file: ci/313-latest.yaml
             os: macos-13 # Intel
-          - environment-file: ci/312-latest.yaml
+          - environment-file: ci/313-latest.yaml
             os: macos-14 # Apple Silicon
-          - environment-file: ci/312-latest.yaml
+          - environment-file: ci/313-latest.yaml
             os: windows-latest
       fail-fast: false
   
@@ -47,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
        
       - name: setup micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: ${{ matrix.environment-file }}
           micromamba-version: 'latest'
@@ -78,7 +79,7 @@ jobs:
           --doctest-only --doctest-continue-on-failure giddy
 
       - name: codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
