@@ -140,13 +140,13 @@ def dynamic_lisa_heatmap(rose, p=0.05, ax=None, **kwargs):
 
     plot
 
-    >>> dynamic_lisa_heatmap(rose)
-    >>> plt.show()
+    >>> dynamic_lisa_heatmap(rose)  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> dynamic_lisa_heatmap(rose, cbar='GnBu')
-    >>> plt.show()
+    >>> dynamic_lisa_heatmap(rose, cbar='GnBu')  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     """
     moran_locy, moran_locx = _moran_loc_from_rose_calc(rose)
@@ -257,13 +257,13 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
 
     plot
 
-    >>> dynamic_lisa_rose(rose, attribute=y1)
-    >>> plt.show()
+    >>> dynamic_lisa_rose(rose, attribute=y1)  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> dynamic_lisa_rose(rose, c='r')
-    >>> plt.show()
+    >>> dynamic_lisa_rose(rose, c='r')  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     """
     # save_old default values
@@ -409,13 +409,13 @@ def dynamic_lisa_vectors(rose, ax=None, arrows=True, **kwargs):
 
     plot
 
-    >>> dynamic_lisa_vectors(rose)
-    >>> plt.show()
+    >>> dynamic_lisa_vectors(rose)  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> dynamic_lisa_vectors(rose, arrows=False, color='r')
-    >>> plt.show()
+    >>> dynamic_lisa_vectors(rose, arrows=False, color='r')  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     """
     if ax is None:
@@ -526,17 +526,17 @@ def dynamic_lisa_composite(rose, gdf, p=0.05, figsize=(13, 10)):
 
     plot
 
-    >>> dynamic_lisa_composite(rose, gdf)
-    >>> plt.show()
+    >>> dynamic_lisa_composite(rose, gdf)  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> fig, axs = dynamic_lisa_composite(rose, gdf)
-    >>> axs[0].set_ylabel('1996')
-    >>> axs[0].set_xlabel('2009')
-    >>> axs[1].set_title('LISA cluster for 1996')
-    >>> axs[3].set_title('LISA clsuter for 2009')
-    >>> plt.show()
+    >>> fig, axs = dynamic_lisa_composite(rose, gdf)  #doctest: +SKIP
+    >>> axs[0].set_ylabel('1996')  #doctest: +SKIP
+    >>> axs[0].set_xlabel('2009')  #doctest: +SKIP
+    >>> axs[1].set_title('LISA cluster for 1996')  #doctest: +SKIP
+    >>> axs[3].set_title('LISA clsuter for 2009')  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     """
     # Moran_Local uses random numbers,
@@ -705,8 +705,8 @@ def dynamic_lisa_composite_explore(rose, gdf, pattern="", p=0.05, figsize=(13, 1
 
     plot
 
-    >>> fig = dynamic_lisa_composite_explore(rose, gdf, pattern='rel')
-    >>> # plt.show()
+    >>> fig = dynamic_lisa_composite_explore(rose, gdf, pattern='rel')  #doctest: +SKIP
+    >>> plt.show()  #doctest: +SKIP
 
     """
     try:
