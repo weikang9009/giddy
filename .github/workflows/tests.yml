@@ -28,17 +28,17 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         environment-file:
-          - ci/311-oldest.yaml
-          - ci/311-latest.yaml
-          - ci/312-latest.yaml
-          - ci/313-latest.yaml
-          - ci/313-dev.yaml
+          - ci/py311_giddy-oldest.yaml
+          - ci/py311_giddy-latest.yaml
+          - ci/py312_giddy-latest.yaml
+          - ci/py313_giddy-latest.yaml
+          - ci/py313_giddy-dev.yaml
         include:
-          - environment-file: ci/313-latest.yaml
+          - environment-file: ci/py313_giddy-latest.yaml
             os: macos-13 # Intel
-          - environment-file: ci/313-latest.yaml
+          - environment-file: ci/py313_giddy-latest.yaml
             os: macos-14 # Apple Silicon
-          - environment-file: ci/313-latest.yaml
+          - environment-file: ci/py313_giddy-latest.yaml
             os: windows-latest
       fail-fast: false
   
@@ -77,7 +77,7 @@ jobs:
           --cov-report term-missing
 
       - name: run docstring tests
-        if: contains(matrix.environment-file, '313-dev') && contains(matrix.os, 'ubuntu')
+        if: contains(matrix.environment-file, 'dev') && contains(matrix.os, 'ubuntu')
         run: |
           pytest \
           giddy \

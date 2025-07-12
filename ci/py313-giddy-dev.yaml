@@ -1,4 +1,4 @@
-name: test
+name: py313-giddy-dev
 channels:
   - conda-forge
 dependencies:

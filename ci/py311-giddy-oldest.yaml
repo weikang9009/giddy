@@ -1,14 +1,14 @@
-name: test
+name: py311-giddy-oldest
 channels:
   - conda-forge
 dependencies:
-  - python=3.13
+  - python=3.11
   # required
-  - esda
-  - libpysal
-  - mapclassify
-  - quantecon
-  - scipy
+  - esda=2.5
+  - libpysal=4.8
+  - mapclassify=2.7
+  - quantecon=0.8
+  - scipy=1.12
   - splot
   # testing
   - codecov
