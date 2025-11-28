@@ -20,7 +20,7 @@ jobs:
         os:
           - ubuntu-latest
         environment-file:
-          - ci/py313_giddy-latest.yaml
+          - ci/313-latest.yaml
         experimental:
           - false
     defaults:

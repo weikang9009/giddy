@@ -1,4 +1,4 @@
-name: py311-giddy-oldest
+name: 311-oldest
 channels:
   - conda-forge
 dependencies:

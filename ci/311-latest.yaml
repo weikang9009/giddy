@@ -1,4 +1,4 @@
-name: py311-giddy-latest
+name: 311-latest
 channels:
   - conda-forge
 dependencies:

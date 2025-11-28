@@ -28,17 +28,17 @@ jobs:
         os:
           - ubuntu-latest
         environment-file:
-          - ci/py311_giddy-oldest.yaml
-          - ci/py311_giddy-latest.yaml
-          - ci/py312_giddy-latest.yaml
-          - ci/py313_giddy-latest.yaml
-          - ci/py313_giddy-dev.yaml
+          - ci/311-oldest.yaml
+          - ci/311-latest.yaml
+          - ci/312-latest.yaml
+          - ci/313-latest.yaml
+          - ci/313-dev.yaml
         include:
-          - environment-file: ci/py313_giddy-latest.yaml
-            os: macos-13
-          - environment-file: ci/py313_giddy-latest.yaml
-            os: macos-14
-          - environment-file: ci/py313_giddy-latest.yaml
+          - environment-file: ci/313-latest.yaml
+            os: macos-15-intel  # Intel
+          - environment-file: ci/313-latest.yaml
+            os: macos-latest  # Apple Silicon
+          - environment-file: ci/313-latest.yaml
             os: windows-latest
       fail-fast: false
     steps:
