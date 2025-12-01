@@ -3,8 +3,8 @@
 Installation
 ============
 
-giddy currently supports python `3.10`_, `3.11`_, and `3.12`_.
-Please make sure that you are operating in a python 3 environment.
+giddy currently supports python `3.11`_ and above.
+Please make sure that you are operating in a supported environment.
 
 Installing released version
 ---------------------------
@@ -13,7 +13,6 @@ giddy is available on the `Python Package Index`_. Therefore, you can either
 install directly with `pip` from the command line::
 
   pip install -U giddy
-
 
 or download the source distribution (.tar.gz) and decompress it to your selected
 destination. Open a command shell and navigate to the decompressed folder.
@@ -41,9 +40,7 @@ your fork. By making changes
 to your local clone and submitting a pull request to `pysal/giddy`_, you can
 contribute to the giddy development.
 
-.. _3.10: https://docs.python.org/3.10/
 .. _3.11: https://docs.python.org/3.11/
-.. _3.12: https://docs.python.org/3.12/
 .. _Python Package Index: https://pypi.org/project/giddy/
 .. _pysal/giddy: https://github.com/pysal/giddy
 .. _fork: https://help.github.com/articles/fork-a-repo/

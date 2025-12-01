@@ -73,11 +73,13 @@ pip install git+https://github.com/pysal/giddy
 
 #### Requirements
 
-- scipy>=1.8
-- libpysal>=4.8
-- mapclassify>=2.5
-- esda>=2.4
-- quantecon>=0.7
+*see currently supported versions in [`pyproject.toml[dependencies]`](https://github.com/pysal/giddy/blob/main/pyproject.toml)*
+
+- scipy
+- libpysal
+- mapclassify
+- esda
+- quantecon
 
 Contribute
 --------------

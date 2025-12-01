@@ -86,7 +86,6 @@ exclude = ["giddy/tests/*", "docs/*"]
     "E501",     # Line too long
 ]
 
-
 [tool.coverage.run]
 source = ["./giddy"]
 

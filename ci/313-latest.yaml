@@ -1,4 +1,4 @@
-name: test
+name: 313-latest
 channels:
   - conda-forge
 dependencies:
@@ -17,3 +17,11 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-xdist
+  # docs (this env only)
+  - nbsphinx
+  - numpydoc
+  - sphinx
+  - sphinxcontrib-bibtex
+  - sphinxcontrib-napoleon
+  - sphinx-gallery
+  - sphinx_bootstrap_theme

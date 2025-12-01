@@ -1,4 +1,4 @@
-name: test
+name: 313-dev
 channels:
   - conda-forge
 dependencies:
