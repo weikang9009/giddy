@@ -9,6 +9,7 @@ dependencies:
   - mapclassify=2.7
   - quantecon=0.8
   - scipy=1.12
+  - seaborn
   # testing
   - codecov
   - ipywidgets

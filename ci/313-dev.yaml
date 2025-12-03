@@ -18,6 +18,7 @@ dependencies:
       --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple  \
       --extra-index-url https://pypi.org/simple
     - matplotlib
+    - seaborn
     - numpy
     - pandas
     - scipy

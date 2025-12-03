@@ -108,7 +108,7 @@ def dynamic_lisa_heatmap(rose, p=0.05, ax=None, **kwargs):
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> from giddy.directional import Rose
-    >>> from splot.giddy import dynamic_lisa_heatmap
+    >>> from giddy.plotting import dynamic_lisa_heatmap
 
     get csv and shp files
 
@@ -225,6 +225,7 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> from giddy.directional import Rose
+    >>> from giddy.plotting import dynamic_lisa_rose
 
     get csv and shp files
 
@@ -256,12 +257,12 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
 
     plot
 
-    >>> rose.plot(attribute=y1)  #doctest: +SKIP
+    >>> dynamic_lisa_rose(rose, attribute=y1)  #doctest: +SKIP
     >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> rose.plot(c='r') #doctest: +SKIP
+    >>> dynamic_lisa_rose(rose, c='r') #doctest: +SKIP
     >>> plt.show()  #doctest: +SKIP
 
     """
@@ -376,7 +377,7 @@ def dynamic_lisa_vectors(rose, ax=None, arrows=True, **kwargs):
     >>> import matplotlib.pyplot as plt
 
     >>> from giddy.directional import Rose
-    >>> from splot.giddy import dynamic_lisa_vectors
+    >>> from giddy.plotting import dynamic_lisa_vectors
 
     get csv and shp files
 
@@ -493,7 +494,7 @@ def dynamic_lisa_composite(rose, gdf, p=0.05, figsize=(13, 10)):
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> from giddy.directional import Rose
-    >>> from splot.giddy import dynamic_lisa_composite
+    >>> from giddy.plotting import dynamic_lisa_composite
 
     get csv and shp files
 
@@ -672,7 +673,7 @@ def dynamic_lisa_composite_explore(rose, gdf, pattern="", p=0.05, figsize=(13, 1
     add a line ``%matplotlib inline`` at the top of your notebook.
 
     >>> from giddy.directional import Rose
-    >>> from splot.giddy import dynamic_lisa_composite_explore
+    >>> from giddy.plotting import dynamic_lisa_composite_explore
 
     get csv and shp files
 
