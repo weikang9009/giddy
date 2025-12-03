@@ -1,10 +1,8 @@
-import esda
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from esda.moran import Moran_Local
-from packaging.version import Version
 
 from .directional import Rose
 
@@ -21,8 +19,6 @@ TODO
 """
 
 __author__ = "Stefanie Lumnitz <stefanie.lumitz@gmail.com>"
-
-ESDA_GE_270 = Version(esda.__version__) >= Version("2.7.0")
 
 
 def _moran_hot_cold_spots(moran_loc, p=0.05):
@@ -571,42 +567,20 @@ def dynamic_lisa_composite(rose, gdf, p=0.05, figsize=(13, 10)):
     axs[0].xaxis.set_ticks_position("top")
     axs[0].xaxis.set_label_position("top")
 
-    if ESDA_GE_270:
-        moran_locy.plot(
-            gdf,
-            crit_value=p,
-            ax=axs[1],
-            legend=True,
-            legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
-        )
-        moran_locx.plot(
-            gdf,
-            crit_value=p,
-            ax=axs[3],
-            legend=True,
-            legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
-        )
-
-    else:
-        from splot.esda import lisa_cluster
-
-        # Lisa_cluster maps
-        lisa_cluster(
-            moran_locy,
-            gdf,
-            p=p,
-            ax=axs[1],
-            legend=True,
-            legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
-        )
-        lisa_cluster(
-            moran_locx,
-            gdf,
-            p=p,
-            ax=axs[3],
-            legend=True,
-            legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
-        )
+    moran_locy.plot(
+        gdf,
+        crit_value=p,
+        ax=axs[1],
+        legend=True,
+        legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
+    )
+    moran_locx.plot(
+        gdf,
+        crit_value=p,
+        ax=axs[3],
+        legend=True,
+        legend_kwds={"loc": "upper left", "bbox_to_anchor": (0.92, 1.05)},
+    )
 
     axs[1].set_title("Start time")
     axs[3].set_title("End time")

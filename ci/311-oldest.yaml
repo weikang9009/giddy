@@ -4,7 +4,7 @@ channels:
 dependencies:
   - python=3.11
   # required
-  - esda=2.5
+  - esda=2.7
   - libpysal=4.8
   - mapclassify=2.7
   - quantecon=0.8
