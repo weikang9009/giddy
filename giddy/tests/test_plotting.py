@@ -29,7 +29,7 @@ def _data_generation():
     # merge
     gdf = df.merge(income_table, left_on="STATE_NAME", right_on="Name")
     # retrieve spatial weights and data for two points in time
-    w = Queen.from_dataframe(gdf)
+    w = Queen.from_dataframe(gdf, use_index=False)
     w.transform = "r"
     y1 = gdf["1969_rel"].values
     y2 = gdf["2000_rel"].values
