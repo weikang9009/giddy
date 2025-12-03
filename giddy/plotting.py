@@ -128,7 +128,7 @@ def dynamic_lisa_heatmap(rose, p=0.05, ax=None, **kwargs):
 
     retrieve spatial weights and data for two points in time
 
-    >>> w = Queen.from_dataframe(gdf)
+    >>> w = Queen.from_dataframe(gdf, use_index=False)
     >>> w.transform = 'r'
     >>> y1 = gdf['1969_rel'].values
     >>> y2 = gdf['2000_rel'].values
@@ -245,7 +245,7 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
 
     retrieve spatial weights and data for two points in time
 
-    >>> w = Queen.from_dataframe(gdf)
+    >>> w = Queen.from_dataframe(gdf, use_index=False)
     >>> w.transform = 'r'
     >>> y1 = gdf['1969_rel'].values
     >>> y2 = gdf['2000_rel'].values
@@ -397,7 +397,7 @@ def dynamic_lisa_vectors(rose, ax=None, arrows=True, **kwargs):
 
     retrieve spatial weights and data for two points in time
 
-    >>> w = Queen.from_dataframe(gdf)
+    >>> w = Queen.from_dataframe(gdf, use_index=False)
     >>> w.transform = 'r'
     >>> y1 = gdf['1969_rel'].values
     >>> y2 = gdf['2000_rel'].values
@@ -514,7 +514,7 @@ def dynamic_lisa_composite(rose, gdf, p=0.05, figsize=(13, 10)):
 
     retrieve spatial weights and data for two points in time
 
-    >>> w = Queen.from_dataframe(gdf)
+    >>> w = Queen.from_dataframe(gdf, use_index=False)
     >>> w.transform = 'r'
     >>> y1 = gdf['1969_rel'].values
     >>> y2 = gdf['2000_rel'].values
@@ -693,7 +693,7 @@ def dynamic_lisa_composite_explore(rose, gdf, pattern="", p=0.05, figsize=(13, 1
 
     retrieve spatial weights and data for two points in time
 
-    >>> w = Queen.from_dataframe(gdf)
+    >>> w = Queen.from_dataframe(gdf, use_index=False)
     >>> w.transform = 'r'
     >>> y1 = gdf['1969_rel'].values
     >>> y2 = gdf['2000_rel'].values
