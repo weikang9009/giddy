@@ -225,7 +225,7 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
     >>> from giddy.directional import Rose
-    >>> from splot.giddy import dynamic_lisa_rose
+    # >>> from splot.giddy import dynamic_lisa_rose
 
     get csv and shp files
 
@@ -257,12 +257,14 @@ def dynamic_lisa_rose(rose, attribute=None, ax=None, **kwargs):
 
     plot
 
-    >>> dynamic_lisa_rose(rose, attribute=y1)  #doctest: +SKIP
+    # >>> dynamic_lisa_rose(rose, attribute=y1)  #doctest: +SKIP
+    >>> rose.plot(rose, attribute=y1)  #doctest: +SKIP
     >>> plt.show()  #doctest: +SKIP
 
     customize plot
 
-    >>> dynamic_lisa_rose(rose, c='r')  #doctest: +SKIP
+    # >>> dynamic_lisa_rose(rose, c='r')  #doctest: +SKIP
+    >>> rose.plot(rose, c='r')
     >>> plt.show()  #doctest: +SKIP
 
     """
