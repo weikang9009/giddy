@@ -26,6 +26,5 @@ dependencies:
     - git+https://github.com/pysal/libpysal.git@main
     - git+https://github.com/pysal/mapclassify.git@main
     - git+https://github.com/QuantEcon/QuantEcon.py.git@main
-    - git+https://github.com/pysal/splot.git@main
 
   

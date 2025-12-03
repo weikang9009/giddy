@@ -9,7 +9,6 @@ dependencies:
   - mapclassify
   - quantecon
   - scipy
-  - splot
   # testing
   - codecov
   - ipywidgets
