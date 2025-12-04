@@ -9,7 +9,7 @@ dependencies:
   - mapclassify
   - quantecon
   - scipy
-  - splot
+  - seaborn
   # testing
   - codecov
   - ipywidgets

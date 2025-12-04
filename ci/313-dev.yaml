@@ -18,6 +18,7 @@ dependencies:
       --index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple  \
       --extra-index-url https://pypi.org/simple
     - matplotlib
+    - seaborn
     - numpy
     - pandas
     - scipy
@@ -26,6 +27,5 @@ dependencies:
     - git+https://github.com/pysal/libpysal.git@main
     - git+https://github.com/pysal/mapclassify.git@main
     - git+https://github.com/QuantEcon/QuantEcon.py.git@main
-    - git+https://github.com/pysal/splot.git@main
 
   

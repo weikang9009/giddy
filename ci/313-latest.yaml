@@ -9,11 +9,11 @@ dependencies:
   - mapclassify
   - quantecon
   - scipy
-  - splot
   # testing
   - codecov
   - ipywidgets
   - matplotlib
+  - seaborn
   - pytest
   - pytest-cov
   - pytest-xdist
